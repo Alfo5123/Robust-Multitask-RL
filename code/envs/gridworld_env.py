@@ -56,6 +56,9 @@ class GridworldEnv():
         # set seed
         self.seed()
 
+        # consider total episode reward
+        self.episode_total_reward = 0.0
+
     def seed( self, seed = None):
 
     	# Fix seed for reproducibility
@@ -79,11 +82,13 @@ class GridworldEnv():
 
         if action == NOOP:
             info['success'] = True
+            self.episode_total_reward += reward #Update total reward
             return self.current_grid_map, reward, False, info
         next_state_out_of_map = (nxt_agent_state[0] < 0 or nxt_agent_state[0] >= self.grid_map_shape[0]) or \
                                 (nxt_agent_state[1] < 0 or nxt_agent_state[1] >= self.grid_map_shape[1])
         if next_state_out_of_map:
             info['success'] = False
+            self.episode_total_reward += reward #Update total reward
             return self.current_grid_map, reward, False, info
 
         # successful behavior
@@ -93,6 +98,7 @@ class GridworldEnv():
             self.current_grid_map[nxt_agent_state[0], nxt_agent_state[1]] = AGENT
         elif target_position == WALL:
             info['success'] = False
+            self.episode_total_reward += (reward-penalty_wall) #Update total reward
             return self.current_grid_map, (reward-penalty_wall), False, info
         elif target_position == TARGET:
             self.current_grid_map[nxt_agent_state[0], nxt_agent_state[1]] = SUCCESS
@@ -105,8 +111,9 @@ class GridworldEnv():
             done = True
             reward += 1.0
             if self.restart_once_done:
-                self._reset()
+                self.reset()
 
+        self.episode_total_reward += reward #Update total reward
         return self.current_grid_map, reward, done, info
 
     def reset(self):
@@ -114,6 +121,7 @@ class GridworldEnv():
     	# Return the initial state of the environment
         self.agent_state = copy.deepcopy(self.agent_start_state)
         self.current_grid_map = copy.deepcopy(self.start_grid_map)
+        self.episode_total_reward = 0.0
         return self.current_grid_map
 
     def _read_grid_map(self, grid_map_path):
