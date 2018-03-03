@@ -5,6 +5,7 @@ import copy
 from gym import spaces
 import numpy as np
 import matplotlib.pyplot as plt
+from gym.envs.toy_text import discrete
 
 EMPTY = BLACK = 0
 WALL = GRAY = 1
@@ -24,9 +25,8 @@ UP = 2
 LEFT = 3
 RIGHT = 4
 
-
-class GridworldEnv(gym.Env):
-    metadata = {'render.modes': ['human']}
+class GridworldEnv(discrete.DiscreteEnv):
+    metadata = {'render.modes': ['human','rgb_array']}
     num_env = 0
 
     def __init__(self, plan):
@@ -44,7 +44,7 @@ class GridworldEnv(gym.Env):
         self.start_grid_map = self._read_grid_map(self.grid_map_path)  # initial grid map
         self.current_grid_map = copy.deepcopy(self.start_grid_map)  # current grid map
         self.grid_map_shape = self.start_grid_map.shape
-        self.observation_space = spaces.Box(low=0, high=6, shape=self.grid_map_shape)
+        self.observation_space = spaces.Box(low=0, high=6, shape=self.grid_map_shape, dtype = np.uint8)
 
         # agent state: start, target, current state
         self.agent_start_state, self.agent_target_state = self._get_agent_start_target_state()
@@ -55,7 +55,6 @@ class GridworldEnv(gym.Env):
 
         GridworldEnv.num_env += 1
         self.this_fig_num = GridworldEnv.num_env
-        self.viewer = None
 
     def _step(self, action):
         """ return next observation, reward, finished, success """
@@ -96,12 +95,12 @@ class GridworldEnv(gym.Env):
             if self.restart_once_done:
                 self._reset()
 
-        return self.current_grid_map, reward, done, info
+        return self.agent_state, reward, done, info
 
     def _reset(self):
         self.agent_state = copy.deepcopy(self.agent_start_state)
         self.current_grid_map = copy.deepcopy(self.start_grid_map)
-        return self.current_grid_map
+        return self.agent_state
 
     def _read_grid_map(self, grid_map_path):
         grid_map = open(grid_map_path, 'r').readlines()
@@ -143,21 +142,12 @@ class GridworldEnv(gym.Env):
                     observation[i * gs0:(i + 1) * gs0, j * gs1:(j + 1) * gs1, k] = this_value
         return (255*observation).astype(np.uint8)
 
-    def _render(self, mode='human', close=False):
-        if close:
-            if self.viewer is not None:
-                self.viewer.close()
-                self.viewer = None
-            return
-
+    def _render(self, mode='rgb_array'):
         img = self._gridmap_to_image()
         if mode == 'rgb_array':
             return img
         elif mode == 'human':
-            from gym.envs.classic_control import rendering
-            if self.viewer is None:
-                self.viewer = rendering.SimpleImageViewer()
-            self.viewer.imshow(img)
+            return
 
     def change_start_state(self, sp):
         """ change agent start state
