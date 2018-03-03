@@ -9,15 +9,11 @@ from gym.utils import seeding
 
 EMPTY = BLACK = 0
 WALL = GRAY = 1
-BLUE = 2
 TARGET = GREEN = 3
 AGENT = RED = 4
 SUCCESS = PINK = 6
-YELLOW = 7
-COLORS = {BLACK: [0.0, 0.0, 0.0], GRAY: [0.5, 0.5, 0.5],
-          BLUE: [0.0, 0.0, 1.0], GREEN: [0.0, 1.0, 0.0],
-          RED: [1.0, 0.0, 0.0], PINK: [1.0, 0.0, 1.0],
-          YELLOW: [1.0, 1.0, 0.0]}
+COLORS = {BLACK: [0.0, 0.0, 0.0], GRAY: [0.5, 0.5, 0.5], GREEN: [0.0, 1.0, 0.0],
+          RED: [1.0, 0.0, 0.0], PINK: [1.0, 0.0, 1.0]}
 
 NOOP = 0
 DOWN = 1
@@ -72,7 +68,12 @@ class GridworldEnv():
         action = int(action)
         info = {'success': False}
         done = False
-        reward = 0
+
+        #Penalties
+        penalty_step = 0.1
+        penalty_wall = 0.5
+
+        reward = -penalty_step 
         nxt_agent_state = (self.agent_state[0] + self.action_pos_dict[action][0],
                            self.agent_state[1] + self.action_pos_dict[action][1])
 
@@ -92,7 +93,7 @@ class GridworldEnv():
             self.current_grid_map[nxt_agent_state[0], nxt_agent_state[1]] = AGENT
         elif target_position == WALL:
             info['success'] = False
-            return self.current_grid_map, reward, False, info
+            return self.current_grid_map, (reward-penalty_wall), False, info
         elif target_position == TARGET:
             self.current_grid_map[nxt_agent_state[0], nxt_agent_state[1]] = SUCCESS
 
@@ -102,7 +103,7 @@ class GridworldEnv():
 
         if nxt_agent_state[0] == self.agent_target_state[0] and nxt_agent_state[1] == self.agent_target_state[1]:
             done = True
-            reward = 1
+            reward += 1.0
             if self.restart_once_done:
                 self._reset()
 
