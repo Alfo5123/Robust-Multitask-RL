@@ -8,7 +8,6 @@ from torch.autograd import Variable
 from memory_replay import Transition
 
 use_cuda = torch.cuda.is_available()
-steps_done = 0
 
 FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
 LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
@@ -36,15 +35,13 @@ class DQN(nn.Module):
         return self.head(x.view(x.size(0), -1))
 
 def select_action(state, model, num_actions,
-                    EPS_START, EPS_END, EPS_DECAY):
+                    EPS_START, EPS_END, EPS_DECAY, steps_done):
     """
     Selects whether the next action is choosen by our model or randomly
     """
-    global steps_done
     sample = random.random()
     eps_threshold = EPS_END + (EPS_START - EPS_END) * \
         math.exp(-1. * steps_done / EPS_DECAY)
-    steps_done += 1
     if sample > eps_threshold:
         return model(
             Variable(state, volatile=True).type(FloatTensor)).data.max(1)[1].view(1, 1)
