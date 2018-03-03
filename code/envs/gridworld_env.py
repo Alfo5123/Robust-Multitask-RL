@@ -5,7 +5,7 @@ import copy
 from gym import spaces
 import numpy as np
 import matplotlib.pyplot as plt
-from gym.envs.toy_text import discrete
+from gym.utils import seeding
 
 EMPTY = BLACK = 0
 WALL = GRAY = 1
@@ -25,7 +25,8 @@ UP = 2
 LEFT = 3
 RIGHT = 4
 
-class GridworldEnv(discrete.DiscreteEnv):
+class GridworldEnv():
+    
     metadata = {'render.modes': ['human','rgb_array']}
     num_env = 0
 
@@ -44,7 +45,7 @@ class GridworldEnv(discrete.DiscreteEnv):
         self.start_grid_map = self._read_grid_map(self.grid_map_path)  # initial grid map
         self.current_grid_map = copy.deepcopy(self.start_grid_map)  # current grid map
         self.grid_map_shape = self.start_grid_map.shape
-        self.observation_space = spaces.Box(low=0, high=6, shape=self.grid_map_shape, dtype=np.uint8)
+        self.observation_space = spaces.Box(low=0, high=6, shape=self.grid_map_shape)
 
         # agent state: start, target, current state
         self.agent_start_state, self.agent_target_state = self._get_agent_start_target_state()
@@ -55,9 +56,19 @@ class GridworldEnv(discrete.DiscreteEnv):
 
         GridworldEnv.num_env += 1
         self.this_fig_num = GridworldEnv.num_env
+       
+        # set seed
+        self.seed()
 
-    def _step(self, action):
-        """ return next observation, reward, finished, success """
+    def seed( self, seed = None):
+
+    	# Fix seed for reproducibility
+    	self.np_random, seed = seeding.np_random(seed)
+    	return [seed]
+
+    def step(self, action):
+
+        # Return next observation, reward, finished, success
         action = int(action)
         info = {'success': False}
         done = False
@@ -95,14 +106,18 @@ class GridworldEnv(discrete.DiscreteEnv):
             if self.restart_once_done:
                 self._reset()
 
-        return self.agent_state, reward, done, info
+        return self.current_grid_map, reward, done, info
 
-    def _reset(self):
+    def reset(self):
+
+    	# Return the initial state of the environment
         self.agent_state = copy.deepcopy(self.agent_start_state)
         self.current_grid_map = copy.deepcopy(self.start_grid_map)
-        return self.agent_state
+        return self.current_grid_map
 
     def _read_grid_map(self, grid_map_path):
+
+    	# Return the gridmap imported from a txt plan
         grid_map = open(grid_map_path, 'r').readlines()
         grid_map_array = []
         for k1 in grid_map:
@@ -130,6 +145,8 @@ class GridworldEnv(discrete.DiscreteEnv):
         return start_state, target_state
 
     def _gridmap_to_image(self, img_shape=None):
+
+    	# Return image from the gridmap
         if img_shape is None:
             img_shape = self.img_shape
         observation = np.random.randn(*img_shape) * 0.0
@@ -142,12 +159,16 @@ class GridworldEnv(discrete.DiscreteEnv):
                     observation[i * gs0:(i + 1) * gs0, j * gs1:(j + 1) * gs1, k] = this_value
         return (255*observation).astype(np.uint8)
 
-    def _render(self, mode='rgb_array'):
+    def render(self, mode='human'):
+
+    	# Returns a visualization of the environment according to specification
         img = self._gridmap_to_image()
         if mode == 'rgb_array':
             return img
         elif mode == 'human':
-            return
+        	plt.figure()
+        	plt.imshow(img)
+        	return
 
     def change_start_state(self, sp):
         """ change agent start state
@@ -185,7 +206,3 @@ class GridworldEnv(discrete.DiscreteEnv):
             self._reset()
             self._render()
         return True
-
-    @staticmethod
-    def get_action_meaning():
-        return ['NOOP', 'DOWN', 'UP', 'LEFT', 'RIGHT']
