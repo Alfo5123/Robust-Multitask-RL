@@ -1,6 +1,6 @@
 # from: https://github.com/stesfanbo92/A3C-Continuous
-
-import gym
+# import gym
+from envs.gridworld_env import GridworldEnv
 import multiprocessing
 import threading
 import numpy as np
@@ -24,8 +24,9 @@ LR_A = 0.0001               # learning rate for actor
 LR_C = 0.001                # learning rate for critic
 
 # set environment
-GAME = 'MountainCarContinuous-v0'
-env = gym.make(GAME)
+# GAME = 'MountainCarContinuous-v0'
+# env = gym.make(GAME)
+env = GridworldEnv(1) # Number of plan 
 env.reset()
 #if RENDER:                 # uncomment if rendering does not work
 #    env.render()
