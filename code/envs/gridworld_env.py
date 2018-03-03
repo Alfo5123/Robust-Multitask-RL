@@ -44,7 +44,7 @@ class GridworldEnv(discrete.DiscreteEnv):
         self.start_grid_map = self._read_grid_map(self.grid_map_path)  # initial grid map
         self.current_grid_map = copy.deepcopy(self.start_grid_map)  # current grid map
         self.grid_map_shape = self.start_grid_map.shape
-        self.observation_space = spaces.Box(low=0, high=6, shape=self.grid_map_shape)
+        self.observation_space = spaces.Box(low=0, high=6, shape=self.grid_map_shape, dtype=np.uint8)
 
         # agent state: start, target, current state
         self.agent_start_state, self.agent_target_state = self._get_agent_start_target_state()
