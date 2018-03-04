@@ -9,6 +9,8 @@ Papers:
 
 - [Distral: Robust Multitask Reinforcement Learning](https://arxiv.org/pdf/1707.04175.pdf)
 - [Actor-Mimic: Deep Multitask and Transfer Reinforcement Learning](https://arxiv.org/abs/1511.06342)
+- [Reinforcement Learning with Deep Energy-Based Policies](https://arxiv.org/pdf/1702.08165.pdf)
+- [Asynchronous Methods for Deep Reinforcement Learning](https://arxiv.org/pdf/1602.01783.pdf)
 
 Textbooks:
 
