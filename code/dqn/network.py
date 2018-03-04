@@ -49,8 +49,7 @@ def select_action(state, model, num_actions,
         return LongTensor([[random.randrange(num_actions)]])
 
 
-def optimize_model(model, memory, BATCH_SIZE, GAMMA):
-    optimizer = optim.RMSprop(model.parameters())
+def optimize_model(model, optimizer,  memory, BATCH_SIZE, GAMMA):
     global last_sync
     if len(memory) < BATCH_SIZE:
         return

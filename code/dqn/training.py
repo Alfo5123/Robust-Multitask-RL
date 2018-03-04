@@ -1,6 +1,7 @@
 import matplotlib
 import matplotlib.pyplot as plt
 from itertools import count
+import torch.optim as optim
 import torch
 import math
 import numpy as np
@@ -14,13 +15,15 @@ BATCH_SIZE = 128
 GAMMA = 0.999
 EPS_START = 0.9
 EPS_END = 0.05
-EPS_DECAY = 500
+EPS_DECAY = 1000
 
 env = GridworldEnv(1) # Number of plan
 # plt.ion()
 
 num_actions = env.action_space.n
 model = DQN(num_actions)
+optimizer = optim.Adam(model.parameters(), lr=0.0001)
+# optimizer = optim.RMSprop(model.parameters(), )
 
 use_cuda = torch.cuda.is_available()
 if use_cuda:
@@ -41,6 +44,8 @@ def get_screen():
 
 episode_durations = []
 mean_durations = []
+episode_rewards = []
+mean_rewards = []
 
 def plot_durations():
     plt.figure(2)
@@ -56,6 +61,22 @@ def plot_durations():
         # means = torch.cat((torch.zeros(99), means))
     mean_durations.append(np.mean(np.array(episode_durations)[::-1][:100]))
     plt.plot(mean_durations, label="means")
+    plt.legend()
+
+    plt.pause(0.001)  # pause a bit so that plots are updated
+    # if is_ipython:
+    #     display.clear_output(wait=True)
+    #     display.display(plt.gcf())
+
+def plot_rewards():
+    plt.figure(3)
+    plt.clf()
+    plt.title('Training...')
+    plt.xlabel('Episode')
+    plt.ylabel('Reward')
+    plt.plot(episode_rewards, label="rewards")
+    mean_rewards.append(np.mean(np.array(episode_rewards)[::-1][:100]))
+    plt.plot(mean_rewards, label="means")
     plt.legend()
 
     plt.pause(0.001)  # pause a bit so that plots are updated
@@ -80,7 +101,7 @@ plt.draw()
 # plt.pause(0.0001)
 
 steps_done = 0
-num_episodes = 50 # TODO: 10 is too small number!
+num_episodes = 500 # TODO: 10 is too small number!
 max_num_of_steps = 1000
 for i_episode in range(num_episodes):
     print("Cur episode:", i_episode, "steps done:", steps_done,
@@ -116,10 +137,12 @@ for i_episode in range(num_episodes):
         # env.render()
 
         # Perform one step of the optimization (on the target network)
-        optimize_model(model, memory, BATCH_SIZE, GAMMA)
+        optimize_model(model, optimizer, memory, BATCH_SIZE, GAMMA)
         if done or t + 1 >= max_num_of_steps:
             episode_durations.append(t + 1)
+            episode_rewards.append(env.episode_total_reward)
             plot_durations()
+            plot_rewards()
             break
 
 print('Complete')
