@@ -123,10 +123,10 @@ for i_episode in range(num_episodes):
         # Observe new state
         last_screen = current_screen
         current_screen = get_screen()
-        # if not done:
-        next_state = current_screen # - last_screen
-        # else:
-        #     next_state = None
+        if not done:
+            next_state = current_screen # - last_screen
+        else:
+            next_state = None
 
         # Store the transition in memory
         memory.push(state, action, next_state, reward)
