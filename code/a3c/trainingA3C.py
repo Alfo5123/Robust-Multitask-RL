@@ -23,8 +23,6 @@ env = GridworldEnv(1)
 N_S = env.observation_space.shape[0]*env.observation_space.shape[1]
 N_A = env.action_space.n
 
-print(N_S, N_A)
-
 class Net(nn.Module):
     def __init__(self, s_dim, a_dim):
         super(Net, self).__init__()
@@ -107,7 +105,9 @@ class Worker(mp.Process):
         self.res_queue.put(None)
 
 
-if __name__ == "__main__":
+def trainA3C():
+
+    ### A3C training routine. Retuns rewards and durations logs.
 
     gnet = Net(N_S, N_A)        # global network
     gnet.share_memory()         # share the global parameters in multiprocessing
@@ -117,21 +117,14 @@ if __name__ == "__main__":
     # parallel training
     workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i) for i in range(mp.cpu_count())]
     [w.start() for w in workers]
-    res = []                    # record episode reward to plot
+    episode_rewards = []                    # record episode reward to plot
     while True:
         r = res_queue.get()
         if r is not None:
-            res.append(r)
+            episode_rewards.append(r)
         else:
             break
     [w.join() for w in workers]
 
-    import matplotlib.pyplot as plt
-    plt.plot(res)
-
     #Store results
-    np.save('A3C-Rewards',  episode_rewards)
-    np.save('', )
-    plt.ylabel('Mean reward')
-    plt.xlabel('Episode')
-    plt.show()
+    np.save('A3C-Rewards', episode_rewards )

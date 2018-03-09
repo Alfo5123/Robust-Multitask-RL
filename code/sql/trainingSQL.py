@@ -159,8 +159,8 @@ def trainSQL():
 
     ## Store Results}
 
-    np.save('DQN-Rewards',  episode_rewards)
-    np.save('DQN-Durations', episode_durations )
+    np.save('SQL-Rewards',  episode_rewards)
+    np.save('SQL-Durations', episode_durations )
 
     return episode_rewards, episode_durations
 
