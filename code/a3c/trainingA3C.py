@@ -1,8 +1,5 @@
 """
 Reinforcement Learning (A3C) using Pytroch + multiprocessing.
-The most simple implementation for continuous action.
-
-View more on my Chinese tutorial page [莫烦Python](https://morvanzhou.github.io/).
 """
 
 import torch
@@ -19,7 +16,7 @@ import numpy as np
 
 UPDATE_GLOBAL_ITER = 10
 GAMMA = 0.95
-MAX_EP = 1000
+MAX_EP = 500
 MAX_TURNS = 1000
 
 env = GridworldEnv(1)
@@ -111,9 +108,10 @@ class Worker(mp.Process):
 
 
 if __name__ == "__main__":
+
     gnet = Net(N_S, N_A)        # global network
     gnet.share_memory()         # share the global parameters in multiprocessing
-    opt = SharedAdam(gnet.parameters(), lr=0.0001)      # global optimizer
+    opt = SharedAdam(gnet.parameters(), lr=0.001)      # global optimizer
     global_ep, global_ep_r, res_queue = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue()
 
     # parallel training
@@ -130,6 +128,10 @@ if __name__ == "__main__":
 
     import matplotlib.pyplot as plt
     plt.plot(res)
-    plt.ylabel('Moving average ep reward')
-    plt.xlabel('Step')
+
+    #Store results
+    np.save('A3C-Rewards',  episode_rewards)
+    np.save('', )
+    plt.ylabel('Mean reward')
+    plt.xlabel('Episode')
     plt.show()

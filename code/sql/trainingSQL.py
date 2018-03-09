@@ -12,10 +12,10 @@ sys.path.append('../')
 from envs.gridworld_env import GridworldEnv
 
 BATCH_SIZE = 128
-GAMMA = 0.98
+GAMMA = 0.95
 EPS_START = 0.9
 EPS_END = 0.05
-EPS_DECAY = 10000
+EPS_DECAY = 200 #Works better
 # soft q-learing params:
 BETA = 5
 
@@ -24,7 +24,7 @@ env = GridworldEnv(1) # Number of plan
 
 num_actions = env.action_space.n
 model = DQN(num_actions)
-optimizer = optim.Adam(model.parameters(), lr=0.0001)
+optimizer = optim.Adam(model.parameters(), lr=0.001)
 # optimizer = optim.RMSprop(model.parameters(), )
 
 use_cuda = torch.cuda.is_available()
@@ -32,8 +32,6 @@ if use_cuda:
     model.cuda()
 
 memory = ReplayMemory(10000)
-
-
 
 last_sync = 0
 
@@ -93,62 +91,76 @@ def plot_state(state):
         plt.imshow(state.cpu().squeeze(0).squeeze(0).numpy(),
                        interpolation='none')
         plt.draw()
-        plt.pause(0.000001)
+        plt.pause(0.0001)
 
-env.reset()
-plt.figure()
-plt.imshow(get_screen().cpu().squeeze(0).squeeze(0).numpy(),
-           interpolation='none')
-plt.draw()
-# plt.pause(0.0001)
+def trainSQL():
 
-steps_done = 0
-num_episodes = 500 # TODO: 10 is too small number!
-max_num_of_steps = 1000
-for i_episode in range(num_episodes):
-    print("Cur episode:", i_episode, "steps done:", steps_done,
-            "exploration factor:", EPS_END + (EPS_START - EPS_END) * \
-            math.exp(-1. * steps_done / EPS_DECAY))
-    # Initialize the environment and state
-    env.reset()
-    # last_screen = env.current_grid_map
-    current_screen = get_screen()
-    state = current_screen # - last_screen
-    for t in count():
-        # Select and perform an action
-        action = select_action(state, model, num_actions,
-                                EPS_START, EPS_END, EPS_DECAY, steps_done)
-        steps_done += 1
-        _, reward, done, _ = env.step(action[0, 0])
-        reward = Tensor([reward])
+    ### Soft Q-learning training routine. Retuns rewards and durations logs.
 
-        # Observe new state
-        last_screen = current_screen
+    ## Plot environment screen
+    #env.reset()
+    #plt.figure()
+    #plt.imshow(get_screen().cpu().squeeze(0).squeeze(0).numpy(),
+    #           interpolation='none')
+    #plt.draw()
+    # plt.pause(0.0001)
+
+    steps_done = 0
+    num_episodes = 500 # TODO: 10 is too small number!
+    max_num_of_steps = 1000
+    for i_episode in range(num_episodes):
+        print("Cur episode:", i_episode, "steps done:", steps_done,
+                "exploration factor:", EPS_END + (EPS_START - EPS_END) * \
+                math.exp(-1. * steps_done / EPS_DECAY))
+        # Initialize the environment and state
+        env.reset()
+        # last_screen = env.current_grid_map
         current_screen = get_screen()
-        # if not done:
-        next_state = current_screen # - last_screen
-        # else:
-        #     next_state = None
+        state = current_screen # - last_screen
+        for t in count():
+            # Select and perform an action
+            action = select_action(state, model, num_actions,
+                                    EPS_START, EPS_END, EPS_DECAY, steps_done)
+            steps_done += 1
+            _, reward, done, _ = env.step(action[0, 0])
+            reward = Tensor([reward])
 
-        # Store the transition in memory
-        memory.push(state, action, next_state, reward)
+            # Observe new state
+            last_screen = current_screen
+            current_screen = get_screen()
+            # if not done:
+            next_state = current_screen # - last_screen
+            # else:
+            #     next_state = None
 
-        # Move to the next state
-        state = next_state
-        # plot_state(state)
-        # env.render()
+            # Store the transition in memory
+            memory.push(state, action, next_state, reward)
 
-        # Perform one step of the optimization (on the target network)
-        optimize_model(model, optimizer, memory, BATCH_SIZE, GAMMA, BETA)
-        if done or t + 1 >= max_num_of_steps:
-            episode_durations.append(t + 1)
-            episode_rewards.append(env.episode_total_reward)
-            plot_durations()
-            plot_rewards()
-            break
+            # Move to the next state
+            state = next_state
+            # plot_state(state)
+            # env.render()
 
-print('Complete')
-env.render(close=True)
-env.close()
-plt.ioff()
-plt.show()
+            # Perform one step of the optimization (on the target network)
+            optimize_model(model, optimizer, memory, BATCH_SIZE, GAMMA, BETA)
+            if done or t + 1 >= max_num_of_steps:
+                episode_durations.append(t + 1)
+                episode_rewards.append(env.episode_total_reward)
+                #plot_durations()
+                #plot_rewards()
+                break
+
+    print('Complete')
+    env.render(close=True)
+    env.close()
+    plt.ioff()
+    plt.show()
+
+
+    ## Store Results}
+
+    np.save('DQN-Rewards',  episode_rewards)
+    np.save('DQN-Durations', episode_durations )
+
+    return episode_rewards, episode_durations
+
