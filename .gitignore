@@ -5,3 +5,5 @@ code/envs/.ipynb_checkpoints/*
 code/a3c/__pycache__/*
 
 code/dqn/__pycache__/*
+
+code/sql/__pycache__/*
