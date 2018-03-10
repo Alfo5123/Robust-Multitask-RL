@@ -151,7 +151,7 @@ def trainSQL(file_name="SQL", env=GridworldEnv(1), batch_size=128,
 
     ## Store Results
 
-    np.save(file_name + '-sqn-rewards', episode_rewards)
-    np.save(file_name + '-sqn-durations', episode_durations)
+    np.save(file_name + '-sql-rewards', episode_rewards)
+    np.save(file_name + '-sql-durations', episode_durations)
 
     return episode_rewards, episode_durations
