@@ -128,10 +128,10 @@ def trainSQL(file_name="SQL"):
             # Observe new state
             last_screen = current_screen
             current_screen = get_screen()
-            # if not done:
-            next_state = current_screen # - last_screen
-            # else:
-            #     next_state = None
+            if not done:
+                next_state = current_screen # - last_screen
+            else:
+                next_state = None
 
             # Store the transition in memory
             memory.push(state, action, next_state, reward)
@@ -146,8 +146,8 @@ def trainSQL(file_name="SQL"):
             if done or t + 1 >= max_num_of_steps:
                 episode_durations.append(t + 1)
                 episode_rewards.append(env.episode_total_reward)
-                plot_durations()
-                plot_rewards()
+                # plot_durations()
+                # plot_rewards()
                 break
 
     print('Complete')
