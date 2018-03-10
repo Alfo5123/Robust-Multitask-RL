@@ -23,9 +23,9 @@ class DQN(nn.Module):
         self.conv1 = nn.Conv2d(1, 10, kernel_size=2)
         self.max_pool = nn.MaxPool2d((2,2))
         self.bn1 = nn.BatchNorm2d(10)
-        self.conv2 = nn.Conv2d(10, 10, kernel_size=3)
-        self.bn2 = nn.BatchNorm2d(10)
-        self.linear = nn.Linear(60, 20)
+        self.conv2 = nn.Conv2d(10, 20, kernel_size=3)
+        self.bn2 = nn.BatchNorm2d(20)
+        self.linear = nn.Linear(80, 20)
         # self.bn3 = nn.BatchNorm1d(50)
         self.head = nn.Linear(20, num_actions)
 
@@ -94,5 +94,5 @@ def optimize_model(model, optimizer, memory, BATCH_SIZE, GAMMA, BETA):
     optimizer.zero_grad()
     loss.backward()
     # for param in model.parameters():
-    #     param.grad.data.clamp_(-10, 10)
+    #     param.grad.data.clamp_(-1, 1)
     optimizer.step()

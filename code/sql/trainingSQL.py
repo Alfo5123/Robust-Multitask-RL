@@ -45,9 +45,10 @@ def trainSQL(file_name="SQL", env=GridworldEnv(1), batch_size=128,
     episode_rewards = []
     mean_rewards = []
 
-    steps_done = 0
+    steps_done, t = 0, 0
+    # plt.ion()
     for i_episode in range(num_episodes):
-        print("Cur episode:", i_episode, "steps done:", steps_done,
+        print("Cur episode:", i_episode, "steps done:", t,
                 "exploration factor:", eps_end + (eps_start - eps_end) * \
                 math.exp(-1. * steps_done / eps_decay))
         # Initialize the environment and state
@@ -59,7 +60,6 @@ def trainSQL(file_name="SQL", env=GridworldEnv(1), batch_size=128,
             # Select and perform an action
             action = select_action(state, model, num_actions,
                                     eps_start, eps_end, eps_decay, steps_done)
-            steps_done += 1
             _, reward, done, _ = env.step(action[0, 0])
             reward = Tensor([reward])
 
@@ -87,6 +87,7 @@ def trainSQL(file_name="SQL", env=GridworldEnv(1), batch_size=128,
                 if is_plot:
                     plot_durations(episode_durations, mean_durations)
                     plot_rewards(episode_rewards, mean_rewards)
+                steps_done += 1
                 break
 
     print('Complete')
