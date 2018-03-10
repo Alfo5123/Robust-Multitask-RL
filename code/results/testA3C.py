@@ -4,6 +4,8 @@ from envs.gridworld_env import GridworldEnv
 sys.path.append('../a3c')
 import trainingA3C
 
+import gym 
+
 trainingA3C.trainA3C(file_name="env1", 
 					 env=GridworldEnv(1), 
 					 update_global_iter=10,

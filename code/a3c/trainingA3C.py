@@ -55,7 +55,7 @@ class Worker(mp.Process):
 
     def __init__(self, gnet, opt, global_ep, global_ep_r, res_queue, name, \
                  update_global_iter , num_episodes , max_num_steps_per_episode, \
-                 gamma, ns, na ):
+                 gamma, env, ns, na ):
 
         super(Worker, self).__init__()
         self.name = 'w%i' % name
@@ -66,7 +66,7 @@ class Worker(mp.Process):
         self.na = na
 
         self.lnet = Net(ns, na)           # local network
-        self.env = GridworldEnv(1)
+        self.env = env
 
         self.update_global_iter = update_global_iter
         self.num_episodes = num_episodes
@@ -78,7 +78,7 @@ class Worker(mp.Process):
 
         total_step = 1
         while self.g_ep.value < self.num_episodes:
-            s = np.reshape( self.env.reset() , ( self.ns, 1 ) ).flatten()
+            s = np.reshape( self.env.reset() , ( self.ns, 1 ) ).flatten()  ## Line to fix for arbitrary
             buffer_s, buffer_a, buffer_r = [], [], []
             ep_r = 0.0
 
@@ -86,7 +86,7 @@ class Worker(mp.Process):
 
                 a = self.lnet.choose_action(v_wrap(s[None, :]))
                 s_, r, done, _ = self.env.step(a)
-                s_ = np.reshape( s_ , ( self.ns, 1 ) ).flatten()
+                s_ = np.reshape( s_ , ( self.ns, 1 ) ).flatten()  ## Line to fix for arbitrary environment
 
                 ep_r += r
                 buffer_a.append(a)
@@ -115,7 +115,7 @@ def trainA3C(file_name="A3C", env=GridworldEnv(1), update_global_iter=10,
     A3C training routine. Retuns rewards and durations logs.
     Plot environment screen
     """
-    ns = env.observation_space.shape[0]*env.observation_space.shape[1]
+    ns = env.observation_space.shape[0]*env.observation_space.shape[1]  ## Line to fix for arbitrary environment
     na = env.action_space.n
 
     gnet = Net(ns, na)        # global network
@@ -124,7 +124,7 @@ def trainA3C(file_name="A3C", env=GridworldEnv(1), update_global_iter=10,
     global_ep, global_ep_r, res_queue = mp.Value('i', 0), mp.Value('d', 0.), mp.Queue()
 
     # parallel training
-    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i, update_global_iter, num_episodes , max_num_steps_per_episode, gamma, ns, na ) for i in range(mp.cpu_count())]
+    workers = [Worker(gnet, opt, global_ep, global_ep_r, res_queue, i, update_global_iter, num_episodes , max_num_steps_per_episode, gamma, env, ns, na ) for i in range(mp.cpu_count())]
 
     [w.start() for w in workers]
     episode_rewards = []                    # record episode reward to plot
