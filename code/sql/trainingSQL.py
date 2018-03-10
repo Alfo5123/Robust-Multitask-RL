@@ -93,7 +93,7 @@ def plot_state(state):
         plt.draw()
         plt.pause(0.0001)
 
-def trainSQL():
+def trainSQL(file_name="SQL"):
 
     ### Soft Q-learning training routine. Retuns rewards and durations logs.
 
@@ -146,8 +146,8 @@ def trainSQL():
             if done or t + 1 >= max_num_of_steps:
                 episode_durations.append(t + 1)
                 episode_rewards.append(env.episode_total_reward)
-                #plot_durations()
-                #plot_rewards()
+                plot_durations()
+                plot_rewards()
                 break
 
     print('Complete')
@@ -156,11 +156,9 @@ def trainSQL():
     plt.ioff()
     plt.show()
 
+    ## Store Results
 
-    ## Store Results}
-
-    np.save('SQL-Rewards',  episode_rewards)
-    np.save('SQL-Durations', episode_durations )
+    np.save(file_name + 'Rewards', episode_rewards)
+    np.save(file_name + 'Durations', episode_durations)
 
     return episode_rewards, episode_durations
-

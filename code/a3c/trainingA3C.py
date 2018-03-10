@@ -105,7 +105,7 @@ class Worker(mp.Process):
         self.res_queue.put(None)
 
 
-def trainA3C():
+def trainA3C(file_name="A3C"):
 
     ### A3C training routine. Retuns rewards and durations logs.
 
@@ -127,4 +127,4 @@ def trainA3C():
     [w.join() for w in workers]
 
     #Store results
-    np.save('A3C-Rewards', episode_rewards )
+    np.save(file_name + "-Rewards", episode_rewards)

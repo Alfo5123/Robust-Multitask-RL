@@ -92,7 +92,7 @@ def plot_state(state):
         plt.pause(0.000001)
 
 
-def trainDQN ():
+def trainDQN(file_name="DQN"):
 
     ### DQN training routine. Retuns rewards and durations logs.
 
@@ -145,8 +145,8 @@ def trainDQN ():
             if done or t + 1 >= max_num_of_steps:
                 episode_durations.append(t + 1)
                 episode_rewards.append(env.episode_total_reward)
-                #plot_durations()
-                #plot_rewards()
+                # plot_durations()
+                # plot_rewards()
                 break
 
     print('Complete')
@@ -158,7 +158,7 @@ def trainDQN ():
 
     ## Store Results}
 
-    np.save('DQN-Rewards',  episode_rewards)
-    np.save('DQN-Durations', episode_durations )
+    np.save(file_name + '-Rewards', episode_rewards)
+    np.save(file_name + '-Durations', episode_durations)
     
-    return episode_rewards , episode_durations 
+    return episode_rewards, episode_durations
