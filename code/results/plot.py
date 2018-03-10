@@ -6,7 +6,7 @@ smoothing_window = 20
 
 sql_rewards = np.load('env1-sql-rewards.npy')
 dqn_rewards = np.load('env1-dqn-rewards.npy')
-a3c_rewards = np.load('A3C-Rewards.npy')
+a3c_rewards = np.load('env1-a3c-rewards.npy')
 
 sql_smooth = pd.Series(sql_rewards).rolling(smoothing_window,
                             min_periods=smoothing_window).mean()
