@@ -26,7 +26,7 @@ class DQN(nn.Module):
         self.bn2 = nn.BatchNorm2d(10)
         self.conv3 = nn.Conv2d(10, 10, kernel_size=3)
         self.bn3 = nn.BatchNorm2d(10)
-        self.head = nn.Linear(90, num_actions)
+        self.head = nn.Linear(280, num_actions)
 
     def forward(self, x):
         x = F.relu(self.bn1(self.conv1(x)))

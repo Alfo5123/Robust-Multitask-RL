@@ -10,58 +10,13 @@ from network import DQN, select_action, optimize_model, Tensor
 import sys
 sys.path.append('../')
 from envs.gridworld_env import GridworldEnv
+from utils import plot_rewards, plot_durations, plot_state, get_screen
+from IPython.display import clear_output
 
 # env = GridworldEnv(1)
 # plt.ion()
 
 # optimizer = optim.RMSprop(model.parameters(), )
-
-def plot_durations(episode_durations, mean_durations):
-    plt.figure(2)
-    plt.clf()
-    # durations_t = torch.FloatTensor(episode_durations)
-    plt.title('Training...')
-    plt.xlabel('Episode')
-    plt.ylabel('Duration')
-    plt.plot(episode_durations, label="durations")
-    # Take 100 episode averages and plot them too
-    # if len(episode_durations) >= 100:
-        # means = durations_t.unfold(0, 100, 1).mean(1).view(-1)
-        # means = torch.cat((torch.zeros(99), means))
-    mean_durations.append(np.mean(np.array(episode_durations)[::-1][:100]))
-    plt.plot(mean_durations, label="means")
-    plt.legend()
-
-    plt.pause(0.001)  # pause a bit so that plots are updated
-    # if is_ipython:
-    #     display.clear_output(wait=True)
-    #     display.display(plt.gcf())
-
-def plot_rewards(episode_rewards, mean_rewards):
-    plt.figure(3)
-    plt.clf()
-    plt.title('DQN - Training')
-    plt.xlabel('Episode')
-    plt.ylabel('Reward')
-    plt.plot(episode_rewards, label="Reward per Episode")
-    mean_rewards.append(np.mean(np.array(episode_rewards)[::-1][:100]))
-    plt.plot(mean_rewards, label="Mean reward")
-    plt.legend()
-
-    plt.pause(0.00001)  # pause a bit so that plots are updated
-    # if is_ipython:
-    #     display.clear_output(wait=True)
-    #     display.display(plt.gcf())
-
-def plot_state(state):
-    if state is not None:
-        plt.figure(1)
-        plt.clf()
-        plt.imshow(state.cpu().squeeze(0).squeeze(0).numpy(),
-                       interpolation='none')
-        plt.draw()
-        plt.pause(0.000001)
-
 
 def trainDQN(file_name="DQN", env=GridworldEnv(1), batch_size=128,
             gamma=0.999, eps_start=0.9, eps_end=0.05, eps_decay=1000,
@@ -71,18 +26,12 @@ def trainDQN(file_name="DQN", env=GridworldEnv(1), batch_size=128,
     DQN training routine. Retuns rewards and durations logs.
     Plot environment screen
     """
-    def get_screen():
-    # TODO: may have some bugs
-        screen = env.current_grid_map
-        screen = np.ascontiguousarray(screen, dtype=np.float32)
-        screen = torch.from_numpy(screen)
-        return screen.unsqueeze(0).unsqueeze(0).type(Tensor)
     
     if is_plot:
         env.reset()
         plt.ion()
         plt.figure()
-        plt.imshow(get_screen().cpu().squeeze(0).squeeze(0).numpy(),
+        plt.imshow(get_screen(env).cpu().squeeze(0).squeeze(0).numpy(),
                   interpolation='none')
         plt.title("")
         plt.draw()
@@ -104,13 +53,15 @@ def trainDQN(file_name="DQN", env=GridworldEnv(1), batch_size=128,
     mean_rewards = []
     steps_done = 0
     for i_episode in range(num_episodes):
+        if i_episode % 20 == 0:
+            clear_output()
         print("Cur episode:", i_episode, "steps done:", steps_done,
                 "exploration factor:", eps_end + (eps_start - eps_end) * \
                 math.exp(-1. * steps_done / eps_decay))
         # Initialize the environment and state
         env.reset()
         # last_screen = env.current_grid_map
-        current_screen = get_screen()
+        current_screen = get_screen(env)
         state = current_screen # - last_screen
         for t in count():
             # Select and perform an action
@@ -122,7 +73,7 @@ def trainDQN(file_name="DQN", env=GridworldEnv(1), batch_size=128,
 
             # Observe new state
             last_screen = current_screen
-            current_screen = get_screen()
+            current_screen = get_screen(env)
             if not done:
                 next_state = current_screen # - last_screen
             else:
@@ -158,4 +109,4 @@ def trainDQN(file_name="DQN", env=GridworldEnv(1), batch_size=128,
     np.save(file_name + '-dqn-rewards', episode_rewards)
     np.save(file_name + '-dqn-durations', episode_durations)
     
-    return episode_rewards, episode_durations
+    return model, episode_rewards, episode_durations

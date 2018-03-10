@@ -18,5 +18,3 @@ trainingSQL.trainSQL(file_name="env1",
                     max_num_steps_per_episode=1000,
                     learning_rate=0.001,
                     memory_replay_size=10000,)
-
-
