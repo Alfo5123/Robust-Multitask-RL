@@ -26,7 +26,6 @@ def trainDQN(file_name="DQN", env=GridworldEnv(1), batch_size=128,
     DQN training routine. Retuns rewards and durations logs.
     Plot environment screen
     """
-    
     if is_plot:
         env.reset()
         plt.ion()

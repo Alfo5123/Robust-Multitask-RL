@@ -26,13 +26,34 @@ class DQN(nn.Module):
         self.bn2 = nn.BatchNorm2d(10)
         self.conv3 = nn.Conv2d(10, 10, kernel_size=3)
         self.bn3 = nn.BatchNorm2d(10)
-        self.head = nn.Linear(280, num_actions)
+        self.head = nn.Linear(420, num_actions)
 
     def forward(self, x):
-        x = F.relu(self.bn1(self.conv1(x)))
-        x = F.relu(self.bn2(self.conv2(x)))
-        x = F.relu(self.bn3(self.conv3(x)))
+        x = F.leaky_relu(self.bn1(self.conv1(x)))
+        x = F.leaky_relu(self.bn2(self.conv2(x)))
+        x = F.leaky_relu(self.bn3(self.conv3(x)))
         return self.head(x.view(x.size(0), -1))
+
+# class DQN(nn.Module):
+#     """
+#     Deep neural network with represents an agent.
+#     """
+#     def __init__(self, num_actions):
+#         super(DQN, self).__init__()
+#         self.conv1 = nn.Conv2d(1, 5, kernel_size=2)
+#         self.max_pool = nn.MaxPool2d((2,2))
+#         self.bn1 = nn.BatchNorm2d(5)
+#         self.conv2 = nn.Conv2d(5, 20, kernel_size=3)
+#         self.bn2 = nn.BatchNorm2d(20)
+#         self.linear = nn.Linear(80, 20)
+#         # self.bn3 = nn.BatchNorm1d(50)
+#         self.head = nn.Linear(20, num_actions)
+
+#     def forward(self, x):
+#         x = F.leaky_relu(self.max_pool(self.bn1(self.conv1(x))))
+#         x = F.leaky_relu((self.bn2(self.conv2(x))))
+#         x = F.leaky_relu(self.linear(x.view(x.size(0), -1)))
+#         return self.head(x)
 
 def select_action(state, model, num_actions,
                     EPS_START, EPS_END, EPS_DECAY, steps_done):
