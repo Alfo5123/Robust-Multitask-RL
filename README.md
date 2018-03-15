@@ -11,6 +11,7 @@ Papers:
 - [Actor-Mimic: Deep Multitask and Transfer Reinforcement Learning](https://arxiv.org/abs/1511.06342)
 - [Reinforcement Learning with Deep Energy-Based Policies](https://arxiv.org/pdf/1702.08165.pdf)
 - [Asynchronous Methods for Deep Reinforcement Learning](https://arxiv.org/pdf/1602.01783.pdf)
+- [Equivalence Between Policy Gradients and Soft Q-Learning](https://arxiv.org/pdf/1704.06440.pdf)
 
 Textbooks:
 
