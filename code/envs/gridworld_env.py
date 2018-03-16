@@ -33,7 +33,7 @@ class GridworldEnv():
         self.action_space = spaces.Discrete(5)
         self.action_pos_dict = {NOOP: [0, 0], UP: [-1, 0], DOWN: [1, 0], LEFT: [0, -1], RIGHT: [0, 1]}
 
-        self.img_shape = [256, 256, 3]  # observation space shape
+        self.img_shape = [256, 256, 3]  # visualize state
 
         # initialize system state
         this_file_path = os.path.dirname(os.path.realpath(__file__))
@@ -41,7 +41,7 @@ class GridworldEnv():
         self.start_grid_map = self._read_grid_map(self.grid_map_path)  # initial grid map
         self.current_grid_map = copy.deepcopy(self.start_grid_map)  # current grid map
         self.grid_map_shape = self.start_grid_map.shape
-        self.observation_space = spaces.Box(low=0, high=6, shape=self.grid_map_shape)
+        self.observation_space = spaces.Discrete(self.grid_map_shape[0]*self.grid_map_shape[1])
 
         # agent state: start, target, current state
         self.agent_start_state, self.agent_target_state = self._get_agent_start_target_state()
@@ -49,9 +49,6 @@ class GridworldEnv():
 
         # set other parameters
         self.restart_once_done = False  # restart or not once done
-
-        GridworldEnv.num_env += 1
-        self.this_fig_num = GridworldEnv.num_env
        
         # set seed
         self.seed()
@@ -68,6 +65,13 @@ class GridworldEnv():
 
     	self.np_random, seed = seeding.np_random(seed)
     	return [seed]
+
+    def location ( self , coordinates ) :
+
+    	# Return the current location of the agent in the map
+    	# given coordinates 
+
+    	return (self.grid_map_shape[0]*coordinates[0]+coordinates[1])
 
     def step(self, action):
 
@@ -88,24 +92,32 @@ class GridworldEnv():
         if action == NOOP:
             info['success'] = True
             self.episode_total_reward += reward #Update total reward
-            return self.current_grid_map, reward, False, info
+            return self.location(self.agent_state), reward, False, info
+
+	#Make a step
         next_state_out_of_map = (nxt_agent_state[0] < 0 or nxt_agent_state[0] >= self.grid_map_shape[0]) or \
                                 (nxt_agent_state[1] < 0 or nxt_agent_state[1] >= self.grid_map_shape[1])
+
         if next_state_out_of_map:
             info['success'] = False
             self.episode_total_reward += reward #Update total reward
-            return self.current_grid_map, reward, False, info
+            return self.location(self.agent_state), reward, False, info
 
         # successful behavior
         target_position = self.current_grid_map[nxt_agent_state[0], nxt_agent_state[1]]
 
         if target_position == EMPTY:
+
             self.current_grid_map[nxt_agent_state[0], nxt_agent_state[1]] = AGENT
+
         elif target_position == WALL:
+
             info['success'] = False
             self.episode_total_reward += (reward-penalty_wall) #Update total reward
-            return self.current_grid_map, (reward-penalty_wall), False, info
+            return self.location(self.agent_state), (reward-penalty_wall), False, info
+
         elif target_position == TARGET:
+
             self.current_grid_map[nxt_agent_state[0], nxt_agent_state[1]] = SUCCESS
 
         self.current_grid_map[self.agent_state[0], self.agent_state[1]] = EMPTY
@@ -119,7 +131,7 @@ class GridworldEnv():
                 self.reset()
 
         self.episode_total_reward += reward #Update total reward
-        return self.current_grid_map, reward, done, info
+        return self.location(self.agent_state), reward, done, info
 
     def reset(self):
 
@@ -128,7 +140,7 @@ class GridworldEnv():
         self.agent_state = copy.deepcopy(self.agent_start_state)
         self.current_grid_map = copy.deepcopy(self.start_grid_map)
         self.episode_total_reward = 0.0
-        return self.current_grid_map
+        return self.location(self.agent_state)
 
     def close(self):
         if self.viewer: self.viewer.close()
