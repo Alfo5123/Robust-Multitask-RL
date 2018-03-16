@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from utils import v_wrap, set_init, push_and_pull, record
+from a3cutils import v_wrap, set_init, push_and_pull, record
 import torch.nn.functional as F
 import torch.multiprocessing as mp
 from shared_adam import SharedAdam
@@ -16,10 +16,10 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.s_dim = s_dim
         self.a_dim = a_dim
-        self.pi1 = nn.Linear(s_dim, 100)
-        self.pi2 = nn.Linear(100, a_dim)
-        self.v1 = nn.Linear(s_dim, 100)
-        self.v2 = nn.Linear(100, 1)
+        self.pi1 = nn.Linear(s_dim, 32)
+        self.pi2 = nn.Linear(32, a_dim)
+        self.v1 = nn.Linear(s_dim, 32)
+        self.v2 = nn.Linear(32, 1)
         set_init([self.pi1, self.pi2, self.v1, self.v2])
         self.distribution = torch.distributions.Categorical
 
@@ -78,15 +78,17 @@ class Worker(mp.Process):
 
         total_step = 1
         while self.g_ep.value < self.num_episodes:
-            s = np.reshape( self.env.reset() , ( self.ns, 1 ) ).flatten()  ## Line to fix for arbitrary
+            #s = np.reshape( self.env.reset() , ( self.ns, 1 ) ).flatten()  ## Line to fix for arbitrary
+            s = self.env.reset()
+
             buffer_s, buffer_a, buffer_r = [], [], []
             ep_r = 0.0
 
             for _ in range(self.max_num_steps_per_episode):
 
-                a = self.lnet.choose_action(v_wrap(s[None, :]))
+                a = self.lnet.choose_action(v_wrap(s[None,:]))
                 s_, r, done, _ = self.env.step(a)
-                s_ = np.reshape( s_ , ( self.ns, 1 ) ).flatten()  ## Line to fix for arbitrary environment
+                #s_ = np.reshape( s_ , ( self.ns, 1 ) ).flatten()  ## Line to fix for arbitrary environment
 
                 ep_r += r
                 buffer_a.append(a)
@@ -115,7 +117,7 @@ def trainA3C(file_name="A3C", env=GridworldEnv(1), update_global_iter=10,
     A3C training routine. Retuns rewards and durations logs.
     Plot environment screen
     """
-    ns = env.observation_space.shape[0]*env.observation_space.shape[1]  ## Line to fix for arbitrary environment
+    ns = env.observation_space.shape[0]  ## Line to fix for arbitrary environment
     na = env.action_space.n
 
     gnet = Net(ns, na)        # global network
