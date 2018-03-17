@@ -1,119 +1,143 @@
-import math
-import random
+import argparse
+import gym
+import numpy as np
+from itertools import count
+from collections import namedtuple
+
 import torch
 import torch.nn as nn
-import torch.optim as optim
 import torch.nn.functional as F
+import torch.optim as optim
 from torch.autograd import Variable
-from memory_replay import Transition
-
-use_cuda = torch.cuda.is_available()
-
-FloatTensor = torch.cuda.FloatTensor if use_cuda else torch.FloatTensor
-LongTensor = torch.cuda.LongTensor if use_cuda else torch.LongTensor
-ByteTensor = torch.cuda.ByteTensor if use_cuda else torch.ByteTensor
-Tensor = FloatTensor
+from torch.distributions import Categorical
 
 
-class DQN(nn.Module):
-    """
-    Deep neural network with represents an agent.
-    """
-    def __init__(self, num_actions):
-        super(DQN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 5, kernel_size=2)
-        self.bn1 = nn.BatchNorm2d(5)
-        self.conv2 = nn.Conv2d(5, 10, kernel_size=3)
-        self.bn2 = nn.BatchNorm2d(10)
-        self.conv3 = nn.Conv2d(10, 10, kernel_size=3)
-        self.bn3 = nn.BatchNorm2d(10)
-        self.head = nn.Linear(200, num_actions)
+parser = argparse.ArgumentParser(description='PyTorch distral example')
+parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
+                    help='discount factor (default: 0.99)')
+parser.add_argument('--seed', type=int, default=543, metavar='N',
+                    help='random seed (default: 1)')
+parser.add_argument('--log-interval', type=int, default=10, metavar='N',
+                    help='interval between training status logs (default: 10)')
+args = parser.parse_args()
+
+import sys
+sys.path.append('../')
+from envs.gridworld_env import GridworldEnv
+
+env = gym.make('CartPole-v0')
+env.seed(args.seed)
+torch.manual_seed(args.seed)
+
+
+SavedAction = namedtuple('SavedAction', ['log_prob', 'value'])
+
+
+class Distral(nn.Module):
+
+    def __init__(self, tasks = 2 ):
+
+        super(Distral, self).__init__()
+        self.affines = torch.nn.ModuleList ( [ nn.Linear(4, 128) for i in range(tasks+1) ] )
+        self.action_head = torch.nn.ModuleList ( [ nn.Linear(128, 2) for i in range(tasks+1) ] )
+        self.value_head = nn.Linear(128, 1)
+
+        self.saved_actions = [[] for i in range(tasks+1)] 
+        self.rewards = [[] for i in range(tasks+1)] 
+        self.tasks = tasks 
 
     def forward(self, x):
-        x = F.leaky_relu(self.bn1(self.conv1(x)))
-        x = F.leaky_relu(self.bn2(self.conv2(x)))
-        x = F.leaky_relu(self.bn3(self.conv3(x)))
-        return self.head(x.view(x.size(0), -1))
 
-# class DQN(nn.Module):
-#     """
-#     Deep neural network with represents an agent.
-#     """
-#     def __init__(self, num_actions):
-#         super(DQN, self).__init__()
-#         self.conv1 = nn.Conv2d(1, 10, kernel_size=2)
-#         self.max_pool = nn.MaxPool2d((2,2))
-#         self.bn1 = nn.BatchNorm2d(10)
-#         self.conv2 = nn.Conv2d(10, 20, kernel_size=3)
-#         self.bn2 = nn.BatchNorm2d(20)
-#         self.linear = nn.Linear(80, 20)
-#         # self.bn3 = nn.BatchNorm1d(50)
-#         self.head = nn.Linear(20, num_actions)
-
-#     def forward(self, x):
-#         x = F.leaky_relu(self.max_pool(self.bn1(self.conv1(x))))
-#         x = F.leaky_relu(self.bn2(self.conv2(x)))
-#         x = F.leaky_relu(self.linear(x.view(x.size(0), -1)))
-#         return self.head(x)
-
-def select_action(state, model, num_actions,
-                    EPS_START, EPS_END, EPS_DECAY, steps_done):
-    """
-    Selects whether the next action is choosen by our model or randomly
-    """
-    sample = random.random()
-    eps_threshold = EPS_END + (EPS_START - EPS_END) * \
-        math.exp(-1. * steps_done / EPS_DECAY)
-    if sample > eps_threshold:
-        return model(
-            Variable(state, volatile=True).type(FloatTensor)).data.max(1)[1].view(1, 1)
-    else:
-        return LongTensor([[random.randrange(num_actions)]])
+        action_scores = torch.cat( [ F.softmax(self.action_head[i](F.relu(self.affines[i](x))), dim=-1) for i in range(self.tasks+1) ])
+        state_values = self.value_head(F.relu(self.affines[0](x)))
+        return action_scores.view(self.tasks+1,-1) , state_values
 
 
-def optimize_model(model, optimizer, memory, BATCH_SIZE, GAMMA, BETA):
-    global last_sync
-    if len(memory) < BATCH_SIZE:
-        return
-    transitions = memory.sample(BATCH_SIZE)
-    # Transpose the batch (see http://stackoverflow.com/a/19343/3343043 for
-    # detailed explanation).
-    batch = Transition(*zip(*transitions))
+model = Distral( )
+optimizer = optim.Adam(model.parameters(), lr=3e-2)
 
-    # Compute a mask of non-final states and concatenate the batch elements
-    non_final_mask = ByteTensor(tuple(map(lambda s: s is not None,
-                                          batch.next_state)))
-    # We don't want to backprop through the expected action values and volatile
-    # will save us on temporarily changing the model parameters'
-    # requires_grad to False!
-    non_final_next_states = Variable(torch.cat([s for s in batch.next_state
-                                                if s is not None]),
-                                     volatile=True)
-    state_batch = Variable(torch.cat(batch.state))
-    action_batch = Variable(torch.cat(batch.action))
-    reward_batch = Variable(torch.cat(batch.reward))
 
-    # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
-    # columns of actions taken
-    state_action_values = model(state_batch).gather(1, action_batch)
+def select_action(state, tasks):
+    state = torch.from_numpy(state).float()
+    probs, state_value = model(Variable(state))
 
-    # Compute V(s_{t+1}) for all next states.
-    next_state_values = Variable(torch.zeros(BATCH_SIZE).type(Tensor))
-    next_state_values[non_final_mask] = torch.log( torch.exp(
-                        BETA * model(non_final_next_states)).sum(1)) / BETA
-    # Now, we don't want to mess up the loss with a volatile flag, so let's
-    # clear it. After this, we'll just end up with a Variable that has
-    # requires_grad=False
-    next_state_values.volatile = False
-    # Compute the expected Q values
-    expected_state_action_values = (next_state_values * GAMMA) + reward_batch
+    # Obtain the most probable action for each one of the policies
+    actions = []
+    for i in range(tasks+1):
+        m = Categorical(probs[i])
+        actions.append( m.sample() )
+        model.saved_actions[i].append(SavedAction(m.log_prob(actions[i]), state_value))
 
-    # Compute Huber loss
-    loss = F.mse_loss(state_action_values, expected_state_action_values)
+    return torch.cat( actions )
 
-    # Optimize the model
+
+def finish_episode( tasks , alpha , beta , gamma ):
+
+    ### Calculate loss function according to Equation 1
+    R = 0
+    saved_actions = model.saved_actions[1]
+    policy_losses = []
+    value_losses = []
+
+    ## Obtain the discounted rewards backwards
+    rewards = []
+    for r in model.rewards[1][::-1]:
+        R = r + gamma * R 
+        rewards.insert(0, R)
+
+    ## Standardize the rewards to be unit normal (to control the gradient estimator variance)
+    rewards = torch.Tensor(rewards)
+    rewards = (rewards - rewards.mean()) / (rewards.std() + np.finfo(np.float32).eps)
+
+    for (log_prob, value), r in zip(saved_actions, rewards):
+        reward = r - value.data[0]
+        policy_losses.append(-log_prob * reward)
+        value_losses.append(F.smooth_l1_loss(value, Variable(torch.Tensor([r]))))
+
+
     optimizer.zero_grad()
+    loss = torch.stack(policy_losses).sum() + torch.stack(value_losses).sum()
     loss.backward()
-    for param in model.parameters():
-        param.grad.data.clamp_(-1, 1)
     optimizer.step()
+
+    #Clean memory
+    for i in range(tasks+1):
+        del model.rewards[i][:]
+        del model.saved_actions[i][:]
+
+
+def trainDistral( file_name="Distral", envs=[gym.make('CartPole-v0').unwrapped], 
+            batch_size=128, alpha = 0.5 , beta = 0.5, gamma=0.999, is_plot=False,
+            num_episodes=500, max_num_steps_per_episode=10000, learning_rate=0.001 ):
+
+    #Run each one of the policies for the different environments
+    #update the policies
+
+    tasks = len(envs)
+
+    for env in envs:  ### From task 1 to N
+        for i_episode in count(1):
+            total_reward = 0
+            state = env.reset()
+            for t in range(max_num_steps_per_episode):  # Don't infinite loop while learning
+                action = select_action(state, tasks )
+                state, reward, done, _ = env.step(action.data[1])
+                if is_plot:
+                    env.render()
+                model.rewards[1].append(reward)
+                total_reward += reward
+                if done:
+                    break
+
+            finish_episode( tasks , alpha , beta, gamma )
+            if i_episode % args.log_interval == 0:
+                print('Episode {}\tLast length: {:5d}\tTotal Reward: {:.2f}'.format(
+                    i_episode, t, total_reward))
+            if total_reward > 200:
+                print("Solved! Total reward is now {} and "
+                      "the last episode runs to {} time steps!".format(total_reward, t))
+                break
+
+
+if __name__ == '__main__':
+    trainDistral()
