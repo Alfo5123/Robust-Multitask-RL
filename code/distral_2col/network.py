@@ -77,6 +77,9 @@ def select_action(state, policy, model, num_actions,
     # print(pi0.data.numpy())
     V = torch.log((torch.pow(pi0, alpha) * torch.exp(beta * Q)).sum(1)) / beta
     pi_i = torch.pow(pi0, alpha) * torch.exp(beta * (Q - V))
+    if sum(pi_i.data.numpy()[0] < 0) > 0:
+        print("Warning!!!: pi_i has negative values: pi_i", pi_i.data.numpy()[0])
+        pi_i = torch.max(torch.zeros_like(pi_i), pi_i)
     # probabilities = pi_i.data.numpy()[0]
     m = Categorical(pi_i)
     action = m.sample().data.view(1, 1)
@@ -109,8 +112,8 @@ def optimize_policy(policy, optimizer, memories, batch_size,
     optimizer.zero_grad()
     loss.backward()
 
-    for param in policy.parameters():
-        param.grad.data.clamp_(-1, 1)
+    # for param in policy.parameters():
+    #     param.grad.data.clamp_(-1, 1)
     optimizer.step()
 
 def optimize_model(policy, model, optimizer, memory, batch_size,
@@ -158,6 +161,6 @@ def optimize_model(policy, model, optimizer, memory, batch_size,
     # Optimize the model
     optimizer.zero_grad()
     loss.backward()
-    for param in model.parameters():
-        param.grad.data.clamp_(-1, 1)
+    # for param in model.parameters():
+    #     param.grad.data.clamp_(-1, 1)
     optimizer.step()
