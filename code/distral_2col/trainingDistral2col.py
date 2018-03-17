@@ -14,10 +14,10 @@ from utils import plot_rewards, plot_durations, plot_state, get_screen
 
 def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(4),
             GridworldEnv(5)], batch_size=128, gamma=0.999, alpha=1,
-            beta=5, eps_start=0.9, eps_end=0.05, eps_decay=10000,
+            beta=5, eps_start=0.9, eps_end=0.05, eps_decay=10,
             is_plot=False, num_episodes=500,
             max_num_steps_per_episode=1000, learning_rate=0.001,
-            memory_replay_size=10000):
+            memory_replay_size=10000, memory_policy_size=1000):
     """
     Soft Q-learning training routine. Retuns rewards and durations logs.
     Plot environment screen
@@ -26,7 +26,7 @@ def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(4),
     num_envs = len(list_of_envs)
     policy = DQN(num_actions)
     models = [DQN(num_actions) for _ in range(0, num_envs)]
-    memories = [ReplayMemory(memory_replay_size) for _ in range(0, num_envs)]
+    memories = [ReplayMemory(memory_replay_size, memory_policy_size) for _ in range(0, num_envs)]
 
     use_cuda = torch.cuda.is_available()
     if use_cuda:
@@ -69,7 +69,7 @@ def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(4),
             # Select and perform an action
             action = select_action(state, models[i_env], num_actions,
                                     eps_start, eps_end, eps_decay,
-                                    steps_done[i_env])
+                                    episodes_done[i_env])
             steps_done[i_env] += 1
             current_time[i_env] += 1
             _, reward, done, _ = env.step(action[0, 0])
@@ -92,7 +92,8 @@ def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(4),
                             memories[i_env], batch_size, alpha, beta, gamma)
             if done:
                 print("ENV:", i_env, "\treward:", env.episode_total_reward,
-                    "\tit:", current_time[i_env])
+                    "\tit:", current_time[i_env], "\texp_factor:", eps_end +
+                    (eps_start - eps_end) * math.exp(-1. * episodes_done[i_env] / eps_decay))
                 env.reset()
                 episodes_done[i_env] += 1
                 episode_durations[i_env].append(current_time[i_env])

@@ -78,7 +78,7 @@ def optimize_policy(policy, optimizer, memories, batch_size,
     loss = 0
     for i_env in range(num_envs):
         size_to_sample = np.minimum(batch_size, len(memories[i_env]))
-        transitions = memories[i_env].sample(size_to_sample)
+        transitions = memories[i_env].policy_sample(size_to_sample)
         batch = Transition(*zip(*transitions))
         
         state_batch = Variable(torch.cat(batch.state))
@@ -88,7 +88,7 @@ def optimize_policy(policy, optimizer, memories, batch_size,
         
         cur_loss = (torch.pow(Variable(Tensor([gamma])), time_batch) *
             torch.log(policy(state_batch)[:, actions])).sum()
-        loss += cur_loss
+        loss -= cur_loss
         # loss = cur_loss if i_env == 0 else loss + cur_loss
 
     optimizer.zero_grad()
