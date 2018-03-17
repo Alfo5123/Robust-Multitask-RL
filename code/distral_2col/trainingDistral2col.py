@@ -6,16 +6,16 @@ import torch
 import math
 import numpy as np
 from memory_replay import ReplayMemory, Transition
-from network import DQN, select_action, optimize_model, Tensor, optimize_policy
+from network import DQN, select_action, optimize_model, Tensor, optimize_policy, PolicyNetwork
 import sys
 sys.path.append('../')
 from envs.gridworld_env import GridworldEnv
 from utils import plot_rewards, plot_durations, plot_state, get_screen
 
-def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(4),
-            GridworldEnv(5)], batch_size=128, gamma=0.999, alpha=1,
-            beta=5, eps_start=0.9, eps_end=0.05, eps_decay=10,
-            is_plot=False, num_episodes=500,
+def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(5),
+            GridworldEnv(4)], batch_size=128, gamma=0.999, alpha=1,
+            beta=5, eps_start=0.9, eps_end=0.05, eps_decay=5,
+            is_plot=False, num_episodes=200,
             max_num_steps_per_episode=1000, learning_rate=0.001,
             memory_replay_size=10000, memory_policy_size=1000):
     """
@@ -24,7 +24,7 @@ def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(4),
     """
     num_actions = list_of_envs[0].action_space.n
     num_envs = len(list_of_envs)
-    policy = DQN(num_actions)
+    policy = PolicyNetwork(num_actions)
     models = [DQN(num_actions) for _ in range(0, num_envs)]
     memories = [ReplayMemory(memory_replay_size, memory_policy_size) for _ in range(0, num_envs)]
 
@@ -67,9 +67,9 @@ def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(4),
             current_screen = get_screen(env)
             state = current_screen # - last_screen
             # Select and perform an action
-            action = select_action(state, models[i_env], num_actions,
+            action = select_action(state, policy, models[i_env], num_actions,
                                     eps_start, eps_end, eps_decay,
-                                    episodes_done[i_env])
+                                    episodes_done[i_env], alpha, beta)
             steps_done[i_env] += 1
             current_time[i_env] += 1
             _, reward, done, _ = env.step(action[0, 0])
@@ -91,7 +91,8 @@ def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(4),
             optimize_model(policy, models[i_env], optimizers[i_env],
                             memories[i_env], batch_size, alpha, beta, gamma)
             if done:
-                print("ENV:", i_env, "\treward:", env.episode_total_reward,
+                print("ENV:", i_env, "iter:", episodes_done[i_env],
+                    "\treward:", env.episode_total_reward,
                     "\tit:", current_time[i_env], "\texp_factor:", eps_end +
                     (eps_start - eps_end) * math.exp(-1. * episodes_done[i_env] / eps_decay))
                 env.reset()

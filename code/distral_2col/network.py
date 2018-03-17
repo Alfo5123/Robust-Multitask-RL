@@ -8,6 +8,8 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 from memory_replay import Transition
 from itertools import count
+from torch.distributions import Categorical
+
 
 use_cuda = torch.cuda.is_available()
 
@@ -41,7 +43,7 @@ class PolicyNetwork(nn.Module):
     Deep neural network which represents policy network.
     """
     def __init__(self, num_actions):
-        super(DQN, self).__init__()
+        super(PolicyNetwork, self).__init__()
         self.conv1 = nn.Conv2d(1, 5, kernel_size=2)
         self.bn1 = nn.BatchNorm2d(5)
         self.conv2 = nn.Conv2d(5, 10, kernel_size=3)
@@ -52,25 +54,38 @@ class PolicyNetwork(nn.Module):
         self.softmax = nn.Softmax()
 
     def forward(self, x):
-        x = F.leaky_relu(self.max_pool(self.bn1(self.conv1(x))))
+        x = F.leaky_relu(self.bn1(self.conv1(x)))
         x = F.leaky_relu(self.bn2(self.conv2(x)))
-        x = F.leaky_relu(self.linear(x.view(x.size(0), -1)))
-        return self.softmax(self.head(x))
+        x = F.leaky_relu(self.bn3(self.conv3(x)))
+        x = F.leaky_relu(self.head(x.view(x.size(0), -1)))
+        return self.softmax(x)
 
-def select_action(state, model, num_actions,
-                    EPS_START, EPS_END, EPS_DECAY, steps_done):
+def select_action(state, policy, model, num_actions,
+                    EPS_START, EPS_END, EPS_DECAY, steps_done, alpha, beta):
     """
     Selects whether the next action is choosen by our model or randomly
     """
-    sample = random.random()
-    eps_threshold = EPS_END + (EPS_START - EPS_END) * \
-        math.exp(-1. * steps_done / EPS_DECAY)
-    if sample > eps_threshold:
-        return model(
-            Variable(state, volatile=True).type(FloatTensor
-                    )).data.max(1)[1].view(1, 1)
-    else:
-        return LongTensor([[random.randrange(num_actions)]])
+    # sample = random.random()
+    # eps_threshold = EPS_END + (EPS_START - EPS_END) * \
+    #     math.exp(-1. * steps_done / EPS_DECAY)
+    # .data.max(1)[1].view(1, 1)
+    # if sample <= eps_threshold:
+    #     return LongTensor([[random.randrange(num_actions)]])
+
+    Q = model(Variable(state, volatile=True).type(FloatTensor))
+    pi0 = policy(Variable(state, volatile=True).type(FloatTensor))
+    # print(pi0.data.numpy())
+    V = torch.log((torch.pow(pi0, alpha) * torch.exp(beta * Q)).sum(1)) / beta
+    pi_i = torch.pow(pi0, alpha) * torch.exp(beta * (Q - V))
+    # probabilities = pi_i.data.numpy()[0]
+    m = Categorical(pi_i)
+    action = m.sample().data.view(1, 1)
+    return action
+    # numpy.random.choice(numpy.arange(0, num_actions), p=probabilities)
+
+
+
+        
 
 
 def optimize_policy(policy, optimizer, memories, batch_size,
