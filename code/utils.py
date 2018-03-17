@@ -15,7 +15,7 @@ def get_screen(env):
     screen = torch.from_numpy(screen)
     return screen.unsqueeze(0).unsqueeze(0).type(Tensor)
 
-def play_game(env, agent, max_steps_num=100):
+def play_game(env, agent, max_steps_num=100): #### To fix for dqn0, sql0
 
     keyFrames = []
     env.reset()
