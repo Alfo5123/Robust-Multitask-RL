@@ -32,6 +32,7 @@ def select_action(state, model, num_actions,
     """
     Selects whether the next action is choosen by our model or randomly
     """
+    print(state)
     sample = random.random()
     eps_threshold = EPS_END + (EPS_START - EPS_END) * \
         math.exp(-1. * steps_done / EPS_DECAY)

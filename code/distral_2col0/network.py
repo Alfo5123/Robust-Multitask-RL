@@ -22,46 +22,25 @@ class DQN(nn.Module):
     """
     Deep neural network with represents an agent.
     """
-    def __init__(self, num_actions):
+    def __init__(self, input_size, num_actions):
         super(DQN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 5, kernel_size=2)
-        self.bn1 = nn.BatchNorm2d(5)
-        self.conv2 = nn.Conv2d(5, 10, kernel_size=3)
-        self.bn2 = nn.BatchNorm2d(10)
-        self.conv3 = nn.Conv2d(10, 10, kernel_size=3)
-        self.bn3 = nn.BatchNorm2d(10)
-        self.head = nn.Linear(200, num_actions)
+        self.l1 = nn.Linear(input_size,100)    ## To play with different NN architectures
+        self.l2 = nn.Linear(100, num_actions)
 
     def forward(self, x):
-        x = F.leaky_relu(self.bn1(self.conv1(x)))
-        x = F.leaky_relu(self.bn2(self.conv2(x)))
-        x = F.leaky_relu(self.bn3(self.conv3(x)))
-        # x = F.leaky_relu(self.conv1(x))
-        # x = F.leaky_relu(self.conv2(x))
-        # x = F.leaky_relu(self.conv3(x))
-        return self.head(x.view(x.size(0), -1))
+        return self.l2(F.relu(self.l1(x)))
 
 class PolicyNetwork(nn.Module):
     """
     Deep neural network which represents policy network.
     """
-    def __init__(self, num_actions):
+    def __init__(self, input_size, num_actions):
         super(PolicyNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(1, 5, kernel_size=2)
-        self.bn1 = nn.BatchNorm2d(5)
-        self.conv2 = nn.Conv2d(5, 10, kernel_size=3)
-        self.bn2 = nn.BatchNorm2d(10)
-        self.conv3 = nn.Conv2d(10, 10, kernel_size=3)
-        self.bn3 = nn.BatchNorm2d(10)
-        self.head = nn.Linear(200, num_actions)
-        self.softmax = nn.Softmax()
+        self.l1 = nn.Linear(input_size,100)    ## To play with different NN architectures
+        self.l2 = nn.Linear(100, num_actions)
 
     def forward(self, x):
-        x = F.leaky_relu(self.bn1(self.conv1(x)))
-        x = F.leaky_relu(self.bn2(self.conv2(x)))
-        x = F.leaky_relu(self.bn3(self.conv3(x)))
-        x = F.leaky_relu(self.head(x.view(x.size(0), -1)))
-        return self.softmax(x)
+        return F.softmax(self.l2(F.relu(self.l1(x))))
 
 def select_action(state, policy, model, num_actions,
                     EPS_START, EPS_END, EPS_DECAY, steps_done, alpha, beta):
@@ -74,29 +53,29 @@ def select_action(state, policy, model, num_actions,
     # .data.max(1)[1].view(1, 1)
     # if sample <= eps_threshold:
     #     return LongTensor([[random.randrange(num_actions)]])
+
+
     
-    print("state = ", state)
-    print("forward = ", model(Variable(state, volatile=True)))
     Q = model(Variable(state, volatile=True).type(FloatTensor))
     pi0 = policy(Variable(state, volatile=True).type(FloatTensor))
-    V = torch.log((torch.pow(pi0, alpha) * torch.exp(beta * Q)).sum(1)) / beta
-    print("pi0 = ", pi0)
-    print(torch.pow(pi0, alpha) * torch.exp(beta * Q))
-    print("V = ", V)
+    # print(pi0.data.numpy())
+    V = torch.log((torch.pow(pi0, alpha) * torch.exp(beta * Q)).sum(1) ) / beta
+    
+    #### FOUND ERROR: ( Q ) returns a tensor of nan at some point
+    if np.isnan( Q.sum(1).data[0]) :
+        print(Q)
+        print(state)
+
     pi_i = torch.pow(pi0, alpha) * torch.exp(beta * (Q - V))
-    if sum(pi_i.data.numpy()[0] < 0) > 0:
-        print("Warning!!!: pi_i has negative values: pi_i", pi_i.data.numpy()[0])
-    pi_i = torch.max(torch.zeros_like(pi_i) + 1e-15, pi_i)
+
+    #if sum(pi_i.data.numpy()[0] < 0) > 0:
+    #    print("Warning!!!: pi_i has negative values: pi_i", pi_i.data.numpy()[0])
+    #    pi_i = torch.max(torch.zeros_like(pi_i), pi_i)
     # probabilities = pi_i.data.numpy()[0]
-    print("pi_i = ", pi_i)
     m = Categorical(pi_i)
     action = m.sample().data.view(1, 1)
     return action
     # numpy.random.choice(numpy.arange(0, num_actions), p=probabilities)
-
-
-
-        
 
 
 def optimize_policy(policy, optimizer, memories, batch_size,
@@ -120,8 +99,8 @@ def optimize_policy(policy, optimizer, memories, batch_size,
     optimizer.zero_grad()
     loss.backward()
 
-    for param in policy.parameters():
-        param.grad.data.clamp_(-100, 100)
+    # for param in policy.parameters():
+    #     param.grad.data.clamp_(-1, 1)
     optimizer.step()
 
 def optimize_model(policy, model, optimizer, memory, batch_size,
@@ -169,6 +148,6 @@ def optimize_model(policy, model, optimizer, memory, batch_size,
     # Optimize the model
     optimizer.zero_grad()
     loss.backward()
-    for param in model.parameters():
-        param.grad.data.clamp_(-100, 100)
+    # for param in model.parameters():
+    #     param.grad.data.clamp_(-1, 1)
     optimizer.step()
