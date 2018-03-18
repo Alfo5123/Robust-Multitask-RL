@@ -100,7 +100,7 @@ def finish_episode( policy, distilled, opt_policy , opt_distilled, alpha, beta ,
     discounts = []
     for r in policy.rewards[::-1]:
         R *= gamma 
-        discounts.append(R)
+        discounts.insert(0,R)
 
     discounts = torch.Tensor(discounts)
     #print(discounts)
@@ -138,8 +138,8 @@ def finish_episode( policy, distilled, opt_policy , opt_distilled, alpha, beta ,
 
 
 def trainDistral( file_name="Distral_1col", list_of_envs=[GridworldEnv(5), GridworldEnv(4)], batch_size=128, gamma=0.80, alpha=0.5,
-            beta=5, is_plot=False, num_episodes=1000,
-            max_num_steps_per_episode=500, learning_rate=0.001,
+            beta=0.005, is_plot=False, num_episodes=1000,
+            max_num_steps_per_episode=10, learning_rate=0.001,
             memory_replay_size=10000, memory_policy_size=1000 ):
     
 
