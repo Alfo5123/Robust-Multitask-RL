@@ -6,7 +6,7 @@ import trainingA3C
 
 import gym 
 
-trainingA3C.trainA3C(file_name="env1", 
+trainingA3C.trainA3C(file_name="env5", 
 					 env= GridworldEnv(5),
 					 update_global_iter=10,
             		 gamma=0.95, 

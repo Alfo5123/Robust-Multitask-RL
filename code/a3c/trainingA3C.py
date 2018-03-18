@@ -16,18 +16,20 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.s_dim = s_dim
         self.a_dim = a_dim
-        self.pi1 = nn.Linear(s_dim, 100)
-        self.pi2 = nn.Linear(100, a_dim)
-        self.v1 = nn.Linear(s_dim, 100)
-        self.v2 = nn.Linear(100, 1)
-        set_init([self.pi1, self.pi2, self.v1, self.v2])
+        self.pi1 = nn.Linear(s_dim, 50)
+        self.pi2 = nn.Linear(50,50)
+        self.pi3 = nn.Linear(50, a_dim)
+        self.v1 = nn.Linear(s_dim, 50)
+        self.v2 = nn.Linear(50,50)
+        self.v3 = nn.Linear(50, 1)
+        set_init([self.pi1, self.pi2, self.pi3, self.v1, self.v2, self.v3])
         self.distribution = torch.distributions.Categorical
 
     def forward(self, x):
         pi1 = F.relu(self.pi1(x))
-        logits = self.pi2(pi1)
+        logits = self.pi3(F.relu(self.pi2(pi1)))
         v1 = F.relu(self.v1(x))
-        values = self.v2(v1)
+        values = self.v3(F.relu(self.v2(v1)))
         return logits, values
 
     def choose_action(self, s):

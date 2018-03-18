@@ -21,8 +21,8 @@ import trainingDQN
 #                     memory_replay_size=10000,
 #                 )
 
-agent, _, _ = trainingDQN.trainDQN(file_name="env4",
-                    env=GridworldEnv(4),
+agent, _, _ = trainingDQN.trainDQN(file_name="env1",
+                    env=GridworldEnv(1),
                     batch_size=128,
                     gamma=0.999,
                     eps_start=0.9,
@@ -35,4 +35,4 @@ agent, _, _ = trainingDQN.trainDQN(file_name="env4",
                     memory_replay_size=10000,
                 )
 
-play_game(GridworldEnv(4), agent)
+play_game(GridworldEnv(1), agent)
