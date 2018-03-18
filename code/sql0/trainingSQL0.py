@@ -8,6 +8,7 @@ import numpy as np
 from memory_replay import ReplayMemory, Transition
 from network import DQN, select_action, optimize_model, Tensor
 import sys
+from IPython.display import clear_output
 sys.path.append('../')
 from envs.gridworld_env import GridworldEnv
 from utils import plot_rewards, plot_durations, plot_state, get_screen
@@ -50,10 +51,12 @@ def trainSQL0(file_name="SQL0", env=GridworldEnv(1), batch_size=128,
     steps_done, t = 0, 0
     # plt.ion()
     for i_episode in range(num_episodes):
-        print("Cur episode:", i_episode, "steps done:", t,
-                "exploration factor:", eps_end + (eps_start - eps_end) * \
-                math.exp(-1. * steps_done / eps_decay))
-
+        if i_episode % 20 == 0:
+            clear_output()
+        if i_episode != 0:
+            print("Cur episode:", i_episode, "steps done:", episode_durations[-1],
+                    "exploration factor:", eps_end + (eps_start - eps_end) * \
+                    math.exp(-1. * steps_done / eps_decay), "reward:", env.episode_total_reward)
         # Initialize the environment and state
         state = torch.from_numpy( env.reset() ).type(torch.FloatTensor).view(-1,input_size)
 

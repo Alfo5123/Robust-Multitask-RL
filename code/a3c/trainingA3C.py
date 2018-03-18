@@ -16,10 +16,10 @@ class Net(nn.Module):
         super(Net, self).__init__()
         self.s_dim = s_dim
         self.a_dim = a_dim
-        self.pi1 = nn.Linear(s_dim, 32)
-        self.pi2 = nn.Linear(32, a_dim)
-        self.v1 = nn.Linear(s_dim, 32)
-        self.v2 = nn.Linear(32, 1)
+        self.pi1 = nn.Linear(s_dim, 100)
+        self.pi2 = nn.Linear(100, a_dim)
+        self.v1 = nn.Linear(s_dim, 100)
+        self.v2 = nn.Linear(100, 1)
         set_init([self.pi1, self.pi2, self.v1, self.v2])
         self.distribution = torch.distributions.Categorical
 

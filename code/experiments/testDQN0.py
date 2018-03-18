@@ -6,8 +6,8 @@ sys.path.append('../dqn0')
 import trainingDQN0
 
 import gym
-agent, _, _ = trainingDQN0.trainDQN0(file_name="env4",
-                    env=GridworldEnv(4),
+agent, _, _ = trainingDQN0.trainDQN0(file_name="env8",
+                    env=GridworldEnv(8),
                     batch_size=128,
                     gamma=0.9,
                     eps_start=0.9,
