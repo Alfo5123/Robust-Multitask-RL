@@ -12,7 +12,7 @@ sys.path.append('../')
 from envs.gridworld_env import GridworldEnv
 from utils import plot_rewards, plot_durations, plot_state, get_screen
 
-def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(5),
+def trainD(file_name="Distral_2col", list_of_envs=[GridworldEnv(5),
             GridworldEnv(4), GridworldEnv(6)], batch_size=128, gamma=0.999, alpha=0.8,
             beta=5, eps_start=0.9, eps_end=0.05, eps_decay=5,
             is_plot=False, num_episodes=200,
@@ -23,9 +23,10 @@ def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(5),
     Plot environment screen
     """
     num_actions = list_of_envs[0].action_space.n
+    input_size = list_of_envs[0].observation_space.shape[0]
     num_envs = len(list_of_envs)
-    policy = PolicyNetwork(num_actions)
-    models = [DQN(num_actions) for _ in range(0, num_envs)]   ### Add torch.nn.ModuleList (?)
+    policy = PolicyNetwork(input_size, num_actions)
+    models = [DQN(input_size,num_actions) for _ in range(0, num_envs)]   ### Add torch.nn.ModuleList (?)
     memories = [ReplayMemory(memory_replay_size, memory_policy_size) for _ in range(0, num_envs)]
 
     use_cuda = torch.cuda.is_available()
@@ -47,8 +48,9 @@ def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(5),
     current_time = np.zeros(num_envs)
 
     # Initialize environments
+    states = []
     for env in list_of_envs:
-        env.reset()
+        states.append(torch.from_numpy( env.reset() ).type(torch.FloatTensor).view(-1,input_size))
 
     while np.min(episodes_done) < num_episodes:
         # TODO: add max_num_steps_per_episode
@@ -63,39 +65,42 @@ def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(5),
             #         "exploration factor:", eps_end + (eps_start - eps_end) * \
             #         math.exp(-1. * steps_done / eps_decay))
         
-            # last_screen = env.current_grid_map
-            current_screen = get_screen(env)
-            state = current_screen # - last_screen
             # Select and perform an action
-            action = select_action(state, policy, models[i_env], num_actions,
+            #print(states[i_env])
+
+            action = select_action(states[i_env], policy, models[i_env], num_actions,
                                     eps_start, eps_end, eps_decay,
                                     episodes_done[i_env], alpha, beta)
+
             steps_done[i_env] += 1
             current_time[i_env] += 1
-            _, reward, done, _ = env.step(action[0, 0])
+            next_state_tmp, reward, done, _ = env.step(action[0,0])
             reward = Tensor([reward])
 
             # Observe new state
-            last_screen = current_screen
-            current_screen = get_screen(env)
-            if not done:
-                next_state = current_screen # - last_screen
-            else:
+            next_state = torch.from_numpy( next_state_tmp ).type(torch.FloatTensor).view(-1,input_size)
+
+            if done:
                 next_state = None
 
             # Store the transition in memory
             time = Tensor([current_time[i_env]])
-            memories[i_env].push(state, action, next_state, reward, time)
+            memories[i_env].push(states[i_env], action, next_state, reward, time)
 
             # Perform one step of the optimization (on the target network)
             optimize_model(policy, models[i_env], optimizers[i_env],
                             memories[i_env], batch_size, alpha, beta, gamma)
+
+            # Update state
+            states[i_env] = next_state
+
+            # Check if agent reached target
             if done:
                 print("ENV:", i_env, "iter:", episodes_done[i_env],
                     "\treward:", env.episode_total_reward,
                     "\tit:", current_time[i_env], "\texp_factor:", eps_end +
                     (eps_start - eps_end) * math.exp(-1. * episodes_done[i_env] / eps_decay))
-                env.reset()
+                states[i_env] = torch.from_numpy( env.reset() ).type(torch.FloatTensor).view(-1,input_size)
                 episodes_done[i_env] += 1
                 episode_durations[i_env].append(current_time[i_env])
                 current_time[i_env] = 0

@@ -22,43 +22,25 @@ class DQN(nn.Module):
     """
     Deep neural network with represents an agent.
     """
-    def __init__(self, num_actions):
+    def __init__(self, input_size, num_actions):
         super(DQN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 5, kernel_size=2)
-        self.bn1 = nn.BatchNorm2d(5)
-        self.conv2 = nn.Conv2d(5, 10, kernel_size=3)
-        self.bn2 = nn.BatchNorm2d(10)
-        self.conv3 = nn.Conv2d(10, 10, kernel_size=3)
-        self.bn3 = nn.BatchNorm2d(10)
-        self.head = nn.Linear(200, num_actions)
+        self.l1 = nn.Linear(input_size,100)    ## To play with different NN architectures
+        self.l2 = nn.Linear(100, num_actions)
 
     def forward(self, x):
-        x = F.leaky_relu(self.bn1(self.conv1(x)))
-        x = F.leaky_relu(self.bn2(self.conv2(x)))
-        x = F.leaky_relu(self.bn3(self.conv3(x)))
-        return self.head(x.view(x.size(0), -1))
+        return self.l2(F.relu(self.l1(x)))
 
 class PolicyNetwork(nn.Module):
     """
     Deep neural network which represents policy network.
     """
-    def __init__(self, num_actions):
+    def __init__(self, input_size, num_actions):
         super(PolicyNetwork, self).__init__()
-        self.conv1 = nn.Conv2d(1, 5, kernel_size=2)
-        self.bn1 = nn.BatchNorm2d(5)
-        self.conv2 = nn.Conv2d(5, 10, kernel_size=3)
-        self.bn2 = nn.BatchNorm2d(10)
-        self.conv3 = nn.Conv2d(10, 10, kernel_size=3)
-        self.bn3 = nn.BatchNorm2d(10)
-        self.head = nn.Linear(200, num_actions)
-        self.softmax = nn.Softmax()
+        self.l1 = nn.Linear(input_size,100)    ## To play with different NN architectures
+        self.l2 = nn.Linear(100, num_actions)
 
     def forward(self, x):
-        x = F.leaky_relu(self.bn1(self.conv1(x)))
-        x = F.leaky_relu(self.bn2(self.conv2(x)))
-        x = F.leaky_relu(self.bn3(self.conv3(x)))
-        x = F.leaky_relu(self.head(x.view(x.size(0), -1)))
-        return self.softmax(x)
+        return F.softmax(self.l2(F.relu(self.l1(x))))
 
 def select_action(state, policy, model, num_actions,
                     EPS_START, EPS_END, EPS_DECAY, steps_done, alpha, beta):
@@ -94,10 +76,6 @@ def select_action(state, policy, model, num_actions,
     action = m.sample().data.view(1, 1)
     return action
     # numpy.random.choice(numpy.arange(0, num_actions), p=probabilities)
-
-
-
-        
 
 
 def optimize_policy(policy, optimizer, memories, batch_size,
