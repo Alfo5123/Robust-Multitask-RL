@@ -121,7 +121,8 @@ def optimize_policy(policy, optimizer, memories, batch_size,
     loss.backward()
 
     for param in policy.parameters():
-        param.grad.data.clamp_(-100, 100)
+        param.grad.data.clamp_(-500, 500)
+        # print("policy:", param.grad.data)
     optimizer.step()
 
 def optimize_model(policy, model, optimizer, memory, batch_size,
@@ -164,11 +165,12 @@ def optimize_model(policy, model, optimizer, memory, batch_size,
     expected_state_action_values = (next_state_values * gamma) + reward_batch
 
     # Compute Huber loss
-    loss = F.mse_loss(state_action_values, expected_state_action_values)
-
+    loss = F.mse_loss(state_action_values + 1e-16, expected_state_action_values)
+    # print("loss:", loss)
     # Optimize the model
     optimizer.zero_grad()
     loss.backward()
     for param in model.parameters():
-        param.grad.data.clamp_(-100, 100)
+        param.grad.data.clamp_(-500, 500)
+        # print("model:", param.grad.data)
     optimizer.step()
