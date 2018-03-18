@@ -36,6 +36,9 @@ class DQN(nn.Module):
         x = F.leaky_relu(self.bn1(self.conv1(x)))
         x = F.leaky_relu(self.bn2(self.conv2(x)))
         x = F.leaky_relu(self.bn3(self.conv3(x)))
+        # x = F.leaky_relu(self.conv1(x))
+        # x = F.leaky_relu(self.conv2(x))
+        # x = F.leaky_relu(self.conv3(x))
         return self.head(x.view(x.size(0), -1))
 
 class PolicyNetwork(nn.Module):
@@ -71,16 +74,22 @@ def select_action(state, policy, model, num_actions,
     # .data.max(1)[1].view(1, 1)
     # if sample <= eps_threshold:
     #     return LongTensor([[random.randrange(num_actions)]])
-
+    
+    # print("state = ", state)
+    # print("forward = ", model(Variable(state, volatile=True)))
     Q = model(Variable(state, volatile=True).type(FloatTensor))
     pi0 = policy(Variable(state, volatile=True).type(FloatTensor))
     # print(pi0.data.numpy())
     V = torch.log((torch.pow(pi0, alpha) * torch.exp(beta * Q)).sum(1)) / beta
+    # print("pi0 = ", pi0)
+    # print(torch.pow(pi0, alpha) * torch.exp(beta * Q))
+    # print("V = ", V)
     pi_i = torch.pow(pi0, alpha) * torch.exp(beta * (Q - V))
     if sum(pi_i.data.numpy()[0] < 0) > 0:
         print("Warning!!!: pi_i has negative values: pi_i", pi_i.data.numpy()[0])
-        pi_i = torch.max(torch.zeros_like(pi_i), pi_i)
+    pi_i = torch.max(torch.zeros_like(pi_i) + 1e-15, pi_i)
     # probabilities = pi_i.data.numpy()[0]
+    # print("pi_i = ", pi_i)
     m = Categorical(pi_i)
     action = m.sample().data.view(1, 1)
     return action
@@ -112,8 +121,8 @@ def optimize_policy(policy, optimizer, memories, batch_size,
     optimizer.zero_grad()
     loss.backward()
 
-    # for param in policy.parameters():
-    #     param.grad.data.clamp_(-1, 1)
+    for param in policy.parameters():
+        param.grad.data.clamp_(-100, 100)
     optimizer.step()
 
 def optimize_model(policy, model, optimizer, memory, batch_size,
@@ -161,6 +170,6 @@ def optimize_model(policy, model, optimizer, memory, batch_size,
     # Optimize the model
     optimizer.zero_grad()
     loss.backward()
-    # for param in model.parameters():
-    #     param.grad.data.clamp_(-1, 1)
+    for param in model.parameters():
+        param.grad.data.clamp_(-100, 100)
     optimizer.step()
