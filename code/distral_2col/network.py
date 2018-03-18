@@ -75,20 +75,20 @@ def select_action(state, policy, model, num_actions,
     # if sample <= eps_threshold:
     #     return LongTensor([[random.randrange(num_actions)]])
     
-    print("state = ", state)
-    print("forward = ", model(Variable(state, volatile=True)))
+    # print("state = ", state)
+    # print("forward = ", model(Variable(state, volatile=True)))
     Q = model(Variable(state, volatile=True).type(FloatTensor))
     pi0 = policy(Variable(state, volatile=True).type(FloatTensor))
     V = torch.log((torch.pow(pi0, alpha) * torch.exp(beta * Q)).sum(1)) / beta
-    print("pi0 = ", pi0)
-    print(torch.pow(pi0, alpha) * torch.exp(beta * Q))
-    print("V = ", V)
+    # print("pi0 = ", pi0)
+    # print(torch.pow(pi0, alpha) * torch.exp(beta * Q))
+    # print("V = ", V)
     pi_i = torch.pow(pi0, alpha) * torch.exp(beta * (Q - V))
     if sum(pi_i.data.numpy()[0] < 0) > 0:
         print("Warning!!!: pi_i has negative values: pi_i", pi_i.data.numpy()[0])
     pi_i = torch.max(torch.zeros_like(pi_i) + 1e-15, pi_i)
     # probabilities = pi_i.data.numpy()[0]
-    print("pi_i = ", pi_i)
+    # print("pi_i = ", pi_i)
     m = Categorical(pi_i)
     action = m.sample().data.view(1, 1)
     return action
