@@ -58,9 +58,10 @@ def trainDQN0(file_name="DQN0", env=GridworldEnv(1), batch_size=128,
     for i_episode in range(num_episodes):
         if i_episode % 20 == 0:
             clear_output()
-        print("Cur episode:", i_episode, "steps done:", steps_done,
-                "exploration factor:", eps_end + (eps_start - eps_end) * \
-                math.exp(-1. * steps_done / eps_decay))
+        if i_episode != 0:
+            print("Cur episode:", i_episode, "steps done:", episode_durations[-1],
+                    "exploration factor:", eps_end + (eps_start - eps_end) * \
+                    math.exp(-1. * steps_done / eps_decay), "reward:", env.episode_total_reward)
         # Initialize the environment and state
         state = torch.from_numpy( env.reset() ).type(torch.FloatTensor).view(-1,input_size)
         

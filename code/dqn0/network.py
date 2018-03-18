@@ -20,11 +20,14 @@ class DQN(nn.Module):
     """
     def __init__(self, input_size, num_actions):
         super(DQN, self).__init__()
-        self.l1 = nn.Linear(input_size,100)    ## To play with different NN architectures
-        self.l2 = nn.Linear(100, num_actions)
+        self.linear1 = nn.Linear(input_size, 50)
+        self.linear2 = nn.Linear(50, 50)
+        self.head = nn.Linear(50, num_actions)
 
     def forward(self, x):
-        return self.l2(F.relu(self.l1(x)))
+        x = F.leaky_relu(self.linear1(x))
+        x = F.leaky_relu(self.linear2(x))
+        return self.head(x)
 
 
 def select_action(state, model, num_actions,
@@ -86,5 +89,5 @@ def optimize_model(model, optimizer,  memory, BATCH_SIZE, GAMMA):
     optimizer.zero_grad()
     loss.backward()
     for param in model.parameters():
-        param.grad.data.clamp_(-1, 1)
+        param.grad.data.clamp_(-500, 500)
     optimizer.step()
