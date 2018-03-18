@@ -12,7 +12,7 @@ sys.path.append('../')
 from envs.gridworld_env import GridworldEnv
 from utils import plot_rewards, plot_durations, plot_state, get_screen
 
-def trainD(file_name="Distral_2col", list_of_envs=[GridworldEnv(5),
+def trainD(file_name="Distral_1col", list_of_envs=[GridworldEnv(5),
             GridworldEnv(4), GridworldEnv(6)], batch_size=128, gamma=0.999, alpha=0.8,
             beta=5, eps_start=0.9, eps_end=0.05, eps_decay=5,
             is_plot=False, num_episodes=200,

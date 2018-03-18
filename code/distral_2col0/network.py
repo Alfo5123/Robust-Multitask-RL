@@ -24,11 +24,14 @@ class DQN(nn.Module):
     """
     def __init__(self, input_size, num_actions):
         super(DQN, self).__init__()
-        self.l1 = nn.Linear(input_size,100)    ## To play with different NN architectures
-        self.l2 = nn.Linear(100, num_actions)
+        self.linear1 = nn.Linear(input_size, 50)
+        self.linear2 = nn.Linear(50, 50)
+        self.head = nn.Linear(50, num_actions)
 
     def forward(self, x):
-        return self.l2(F.relu(self.l1(x)))
+        x = F.leaky_relu(self.linear1(x))
+        x = F.leaky_relu(self.linear2(x))
+        return self.head(x)
 
 class PolicyNetwork(nn.Module):
     """
@@ -36,11 +39,14 @@ class PolicyNetwork(nn.Module):
     """
     def __init__(self, input_size, num_actions):
         super(PolicyNetwork, self).__init__()
-        self.l1 = nn.Linear(input_size,100)    ## To play with different NN architectures
-        self.l2 = nn.Linear(100, num_actions)
+        self.linear1 = nn.Linear(input_size, 50)
+        self.linear2 = nn.Linear(50, 50)
+        self.head = nn.Linear(50, num_actions)
 
     def forward(self, x):
-        return F.softmax(self.l2(F.relu(self.l1(x))))
+        x = F.leaky_relu(self.linear1(x))
+        x = F.leaky_relu(self.linear2(x))
+        return F.softmax(self.head(x))
 
 def select_action(state, policy, model, num_actions,
                     EPS_START, EPS_END, EPS_DECAY, steps_done, alpha, beta):
@@ -63,15 +69,10 @@ def select_action(state, policy, model, num_actions,
     
     #### FOUND ERROR: ( Q ) returns a tensor of nan at some point
     if np.isnan( Q.sum(1).data[0]) :
-        print(Q)
-        print(state)
+        print("Q = ", Q)
+        print("state = ", state)
 
     pi_i = torch.pow(pi0, alpha) * torch.exp(beta * (Q - V))
-
-    #if sum(pi_i.data.numpy()[0] < 0) > 0:
-    #    print("Warning!!!: pi_i has negative values: pi_i", pi_i.data.numpy()[0])
-    #    pi_i = torch.max(torch.zeros_like(pi_i), pi_i)
-    # probabilities = pi_i.data.numpy()[0]
     m = Categorical(pi_i)
     action = m.sample().data.view(1, 1)
     return action
@@ -134,7 +135,15 @@ def optimize_model(policy, model, optimizer, memory, batch_size,
     next_state_values = Variable(torch.zeros(batch_size).type(Tensor))
     next_state_values[non_final_mask] = torch.log(
         (torch.pow(policy(non_final_next_states), alpha)
-        * torch.exp(beta * model(non_final_next_states))).sum(1)) / beta
+        * (torch.exp(beta * model(non_final_next_states)) + 1e-16)).sum(1)) / beta
+    try:
+        np.isnan(next_state_values.sum().data[0])
+    except Exception:
+        print("next_state_values:", next_state_values)
+        print(policy(non_final_next_states))
+        print(torch.exp(beta * model(non_final_next_states)))
+        print(model(non_final_next_states))
+
     # Now, we don't want to mess up the loss with a volatile flag, so let's
     # clear it. After this, we'll just end up with a Variable that has
     # requires_grad=False
