@@ -1,9 +1,16 @@
 # Robust-Multitask-RL
  Machine Learning Course Project Skoltech 2018
  
-We implement and replicate the results of the recent DeepMind's paper *"Distral: Robust Multitask Reinforcement Learning"*
+ We implemented the Distral algorithm and replicated the results obtained in the recent Google DeepMind's paper: *"Distral: Robust Multitask Reinforcement Learning"*
  
-### Resources & References
+![alt text](https://github.com/Alfo5123/Robust-Multitask-RL/blob/master/code/experiments/ANIMATIONS/457.gif "Distral1")
+
+## Authors
+
+* **Anastasia Koloskova** 
+* **Alfredo de la Fuente** 
+ 
+## Resources & References
 
 Papers:
 
@@ -27,4 +34,6 @@ Repositories:
 
 - [Denny Britz's reinforcement learning compilation of algorithms and material](https://github.com/dennybritz/reinforcement-learning)
 - [OpenAI Gym](https://github.com/openai/gym)
+
+
 
