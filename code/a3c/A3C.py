@@ -18,7 +18,7 @@ from envs.gridworld_env import GridworldEnv
 
 
 parser = argparse.ArgumentParser(description='PyTorch actor-critic example')
-parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
+parser.add_argument('--gamma', type=float, default=0.999, metavar='G',
                     help='discount factor (default: 0.99)')
 parser.add_argument('--seed', type=int, default=543, metavar='N',
                     help='random seed (default: 1)')
@@ -57,7 +57,7 @@ class Policy(nn.Module):
 
 
 model = Policy()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.009)
 
 
 def select_action(state):
@@ -88,7 +88,7 @@ def finish_episode():
     loss = torch.stack(policy_losses).sum() + torch.stack(value_losses).sum()
     loss.backward()
     for param in model.parameters():
-        param.grad.data.clamp_(-1, 1)
+        param.grad.data.clamp_(-100, 100)
     optimizer.step()
     del model.rewards[:]
     del model.saved_actions[:]
