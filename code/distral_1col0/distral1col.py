@@ -64,7 +64,7 @@ def select_action(state, policy , distilled ):
 
 
     # Run distilled policy
-    probs0 = policy(Variable(state))
+    probs0 = distilled(Variable(state))
 
     # Obtain the most probably action for the distilled policy
     m = Categorical(probs0)
